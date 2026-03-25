@@ -260,3 +260,11 @@ define Device/xunlong_orangepi-2
   SOC := sun8i-h3
 endef
 TARGET_DEVICES += xunlong_orangepi-2
+
+define Device/allwinner_t153-153-demo
+  DEVICE_VENDOR := Allwinner
+  DEVICE_MODEL := T153 153-Demo Board
+  SOC := sun8i-t153
+  SUNXI_DTS := $$(SUNXI_DTS_DIR)sun8i-t153-153-demo
+endef
+TARGET_DEVICES += allwinner_t153-153-demo
