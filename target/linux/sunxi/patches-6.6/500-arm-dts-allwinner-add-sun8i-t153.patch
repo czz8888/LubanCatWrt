@@ -443,10 +443,10 @@
 +			     "allwinner,sun50i-r329-rtc";
 +		reg = <0x7000000 0x400>;
 +		interrupts = <SOC_PERIPHERAL_IRQ(144) IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&r_ccu CLK_R_MOD>,
++		clocks = <&r_ccu CLK_BUS_R_RTC>,
 +			 <&dcxo>,
-+			 <&rtc CLK_OSC32K>;
-+		clock-names = "r-ahb", "hosc", "losc";
++			 <&r_ccu CLK_R_AHB>;
++		clock-names = "bus", "hosc", "ahb";
 +		#clock-cells = <1>;
 +	};
 +
