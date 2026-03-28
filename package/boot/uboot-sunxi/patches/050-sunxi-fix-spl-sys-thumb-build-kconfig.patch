@@ -1,0 +1,25 @@
+From 9e12a7fd80276092da3a43b7dbaf572bad294419 Mon Sep 17 00:00:00 2001
+From: Samuel Holland <samuel@sholland.org>
+Date: Thu, 4 Aug 2022 23:29:13 -0500
+Subject: [PATCH] sunxi: Add missing SPL dependency to SPL_SYS_THUMB_BUILD selection
+
+SPL_SYS_THUMB_BUILD has a direct dependency on SPL. Make the selection
+conditional on SPL to avoid creating an invalid configuration and
+suppress the Kconfig unmet-dependency warning.
+
+Signed-off-by: Samuel Holland <samuel@sholland.org>
+---
+ arch/arm/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1112,7 +1112,7 @@ config ARCH_SUNXI
+ 	select SPL_SEPARATE_BSS if SPL
+ 	select SPL_STACK_R if SPL
+ 	select SPL_SYS_MALLOC_SIMPLE if SPL
+-	select SPL_SYS_THUMB_BUILD if !ARM64
++	select SPL_SYS_THUMB_BUILD if !ARM64 && SPL
+ 	select SUNXI_GPIO
+ 	select SYS_NS16550
+ 	select SYS_THUMB_BUILD if !ARM64
