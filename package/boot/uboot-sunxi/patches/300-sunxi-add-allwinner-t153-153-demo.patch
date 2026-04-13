@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/arch/arm/dts/sun8i-t153.dtsi
-@@ -0,0 +1,202 @@
+@@ -0,0 +1,209 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Allwinner T153 (sun8iw22p1) SoC device tree source for u-boot.
@@ -107,6 +107,13 @@
 +				pins = "PB9", "PB10";
 +				function = "uart0";
 +			};
++
++			/omit-if-no-ref/
++			mmc2_pins: mmc2-pins {
++				pins = "PC0", "PC1", "PC2", "PC3", "PC4", "PC5",
++				       "PC6", "PC7", "PC8", "PC9", "PC10", "PC11";
++				function = "mmc2";
++			};
 +		};
 +
 +		ccu: clock-controller@2001000 {
@@ -205,7 +212,7 @@
 +};
 --- /dev/null
 +++ b/arch/arm/dts/sun8i-t153-153-demo.dts
-@@ -0,0 +1,37 @@
+@@ -0,0 +1,45 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright (C) 2024  Allwinner T153 153-Demo Board
@@ -241,6 +248,14 @@
 +	pinctrl-0 = <&mmc0_pins>;
 +	bus-width = <4>;
 +	cd-gpios = <&pio 5 6 GPIO_ACTIVE_LOW>; /* PF6 */
++	status = "okay";
++};
++
++&mmc2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&mmc2_pins>;
++	bus-width = <8>;
++	non-removable;
 +	status = "okay";
 +};
 --- /dev/null
