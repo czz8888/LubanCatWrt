@@ -1,0 +1,170 @@
+From: LubanCatWrt LPDDR4 Support
+Subject: [PATCH] sunxi: dram: sun20i-d1: add LPDDR4 (type=4) support
+
+The Allwinner T153 (sun8iw22p1) SoC uses LPDDR4 memory. Add LPDDR4
+(type=4) support to the sun20i D1/R528 DRAM driver so T153 boards can
+initialise memory correctly. Without this, the controller falls into the
+default timing path which causes DRAM PHY initialisation to hang and
+prevents any serial output.
+
+Timing values are derived from the JEDEC LPDDR4 specification for
+600 MHz CK (dram_clk=1200) and cross-referenced against SyterKit's
+hardware-validated T153 parameters:
+  - RL=20 nCK, WL=10 nCK at 600 MHz controller clock
+  - tRFC=280ns (16Gb), tREFI=3900ns (per-bank), tFAW=40ns
+
+Also make the DRAM mode registers MR0-MR3 configurable via Kconfig
+(defaulting to the existing DDR3 values) so LPDDR4 boards can supply
+their own mode register settings without forking the driver.
+
+Signed-off-by: LubanCatWrt <chechesa666@github.com>
+---
+ drivers/ram/sunxi/Kconfig          |  40 ++++++++++
+ drivers/ram/sunxi/dram_sun20i_d1.c |  65 +++++++++++++---
+ drivers/ram/sunxi/dram_sun20i_d1.h |   1 +
+ 3 files changed, 94 insertions(+), 12 deletions(-)
+
+--- a/drivers/ram/sunxi/Kconfig
++++ b/drivers/ram/sunxi/Kconfig
+@@ -24,6 +24,9 @@ config SUNXI_DRAM_TYPE_LPDDR2
+ config SUNXI_DRAM_TYPE_LPDDR3
+ 	bool "LPDDR3 chips"
+ 
++config SUNXI_DRAM_TYPE_LPDDR4
++	bool "LPDDR4 chips"
++
+ endchoice
+ 
+ config SUNXI_DRAM_TYPE
+@@ -31,6 +34,43 @@ config SUNXI_DRAM_TYPE
+ 	default 3 if SUNXI_DRAM_TYPE_DDR3
+ 	default 6 if SUNXI_DRAM_TYPE_LPDDR2
+ 	default 7 if SUNXI_DRAM_TYPE_LPDDR3
++	default 4 if SUNXI_DRAM_TYPE_LPDDR4
++
++config DRAM_SUNXI_MR0
++	hex "DRAM MR0 parameter"
++	default 0x1c70
++	help
++	  Mode Register 0 value from vendor DRAM settings.
++	  Defaults to the DDR3 value 0x1c70.
++	  For LPDDR4 (Allwinner T153), use 0x964.
++
++config DRAM_SUNXI_MR1
++	hex "DRAM MR1 parameter"
++	default 0x42
++	help
++	  Mode Register 1 value from vendor DRAM settings.
++	  Defaults to the DDR3 value 0x42.
++	  For LPDDR4 (Allwinner T153), use 0x101.
++
++config DRAM_SUNXI_MR2
++	hex "DRAM MR2 parameter"
++	default 0x18
++	help
++	  Mode Register 2 value from vendor DRAM settings.
++	  Defaults to 0x18 (compatible with DDR3 and LPDDR4).
++
++config DRAM_SUNXI_MR3
++	hex "DRAM MR3 parameter"
++	default 0x0
++	help
++	  Mode Register 3 value from vendor DRAM settings.
+ 
+ endif
+--- a/drivers/ram/sunxi/dram_sun20i_d1.h
++++ b/drivers/ram/sunxi/dram_sun20i_d1.h
+@@ -14,6 +14,7 @@ enum sunxi_dram_type {
+ 	SUNXI_DRAM_TYPE_DDR2 = 2,
+ 	SUNXI_DRAM_TYPE_DDR3 = 3,
++	SUNXI_DRAM_TYPE_LPDDR4 = 4,
+ 	SUNXI_DRAM_TYPE_LPDDR2 = 6,
+ 	SUNXI_DRAM_TYPE_LPDDR3 = 7,
+ };
+--- a/drivers/ram/sunxi/dram_sun20i_d1.c
++++ b/drivers/ram/sunxi/dram_sun20i_d1.c
+@@ -194,6 +194,45 @@ static void mctl_set_timing_params(const dram_para_t *para,
+ 		mr0		= 0;
+ 
+ 		break;
++	case SUNXI_DRAM_TYPE_LPDDR4:
++		/* LPDDR4 at 600 MHz CK (dram_clk = 1200 MHz) */
++		tfaw		= ns_to_t(40);
++		trrd		= max(ns_to_t(8), 2);
++		trcd		= ns_to_t(18);
++		trc		= ns_to_t(65);
++		txp		= max(ns_to_t(8), 2);
++		twtr		= max(ns_to_t(8), 4);
++		twr		= max(ns_to_t(18), 4);
++		trp		= ns_to_t(21);
++		tras		= ns_to_t(42);
++		trefi		= ns_to_t(3900) / 32;
++		trfc		= ns_to_t(280);
++
++		trasmax		= CONFIG_DRAM_CLK / 60;
++		/* RL=20 nCK, WL=10 nCK at 600 MHz CK for LPDDR4-1200 */
++		tcl		= 20;
++		tcwl		= 10;
++		wr_latency	= 5;
++		t_rdata_en	= 10;
++		mr2		= para->dram_mr2;
++		mr3		= para->dram_mr3;
++		tcksrx		= 5;
++		tckesr		= 5;
++		trd2wr		= 13;
++		tcke		= 2;
++		tmod		= 6;
++		tmrd		= 5;
++		tmrw		= 10;
++		/* WL + BL/2 (8 cycles for BL=16) + tWR */
++		twtp		= tcwl + 8 + twr;
++		twr2rd		= tcwl + twtr;
++		tdinit0		= 400 * CONFIG_DRAM_CLK + 1;
++		tdinit1		= 500 * CONFIG_DRAM_CLK / 1000 + 1;
++		tdinit2		= 11 * CONFIG_DRAM_CLK + 1;
++		tdinit3		= 1 * CONFIG_DRAM_CLK + 1;
++		mr1		= para->dram_mr1;
++		mr0		= para->dram_mr0;
++
++		break;
+ 	default:
+ 		trfc		= 128;
+ 		trp		= 6;
+@@ -281,8 +320,10 @@ static void mctl_com_init(const dram_para_t *para, const dram_config_t *config)
+ 	val |= (~config->dram_para2 & 0x1) << 12;		// DQ width
+ 	val |= BIT(22);					// ??
+ 	if (para->dram_type == SUNXI_DRAM_TYPE_LPDDR2 ||
+-	    para->dram_type == SUNXI_DRAM_TYPE_LPDDR3) {
+-		val |= BIT(19);		// type 6 and 7 must use 1T
++	    para->dram_type == SUNXI_DRAM_TYPE_LPDDR3 ||
++	    para->dram_type == SUNXI_DRAM_TYPE_LPDDR4) {
++		val |= BIT(19);		// LPDDR types must use 1T
+ 	} else {
+ 		if (config->dram_tpr13 & BIT(5))
+ 			val |= BIT(19);
+@@ -369,8 +410,10 @@ static unsigned int mctl_channel_init(unsigned int ch_index,
+ 
+ 	if (para->dram_type == SUNXI_DRAM_TYPE_LPDDR2 ||
+-	    para->dram_type == SUNXI_DRAM_TYPE_LPDDR3) {
+-		if (dqs_gating_mode == 1)
++	    para->dram_type == SUNXI_DRAM_TYPE_LPDDR3 ||
++	    para->dram_type == SUNXI_DRAM_TYPE_LPDDR4) {
++		if (dqs_gating_mode == 1)
+ 			clrsetbits_le32(0x310311c, 0x080000c0, 0x80000000);
+ 		else
+ 			clrsetbits_le32(0x310311c, 0x77000000, 0x22000000);
+@@ -475,10 +518,10 @@ static const dram_para_t para = {
+ 	.dram_clk	= CONFIG_DRAM_CLK,
+ 	.dram_type	= CONFIG_SUNXI_DRAM_TYPE,
+ 	.dram_zq	= CONFIG_DRAM_ZQ,
+ 	.dram_odt_en	= CONFIG_DRAM_SUNXI_ODT_EN,
+-	.dram_mr0	= 0x1c70,
+-	.dram_mr1	= 0x42,
+-	.dram_mr2	= 0x18,
+-	.dram_mr3	= 0,
++	.dram_mr0	= CONFIG_DRAM_SUNXI_MR0,
++	.dram_mr1	= CONFIG_DRAM_SUNXI_MR1,
++	.dram_mr2	= CONFIG_DRAM_SUNXI_MR2,
++	.dram_mr3	= CONFIG_DRAM_SUNXI_MR3,
+ 	.dram_tpr0	= 0x004a2195,
+ 	.dram_tpr1	= 0x02423190,
