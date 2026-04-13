@@ -42,7 +42,7 @@
 +};
 --- /dev/null
 +++ b/configs/allwinner_t153-153-demo_defconfig
-@@ -0,0 +1,18 @@
+@@ -0,0 +1,19 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_SUNXI=y
 +CONFIG_SPL=y
@@ -55,6 +55,7 @@
 +# CONFIG_CMD_FLASH is not set
 +# CONFIG_SPL_DOS_PARTITION is not set
 +# CONFIG_SPL_EFI_PARTITION is not set
++CONFIG_SYS_CONFIG_NAME="sun8i"
 +CONFIG_DEFAULT_DEVICE_TREE="sun8i-t153-153-demo"
 +CONFIG_SUN8I_EMAC=y
 +CONFIG_USB_EHCI_HCD=y
