@@ -1,21 +1,224 @@
 --- /dev/null
++++ b/arch/arm/dts/sun8i-t153.dtsi
+@@ -0,0 +1,202 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++/*
++ * Allwinner T153 (sun8iw22p1) SoC device tree source for u-boot.
++ * Based on arch/arm/boot/dts/allwinner/sun8i-t153.dtsi from the Linux kernel.
++ *
++ * The T153 is a dual Cortex-A7 SoC from Allwinner. allwinner,sun20i-d1-*
++ * fallbacks are used because the peripheral layout is architecturally similar.
++ */
++
++#define SOC_PERIPHERAL_IRQ(nr)	GIC_SPI nr
++
++#include <dt-bindings/clock/sun20i-d1-ccu.h>
++#include <dt-bindings/clock/sun20i-d1-r-ccu.h>
++#include <dt-bindings/clock/sun6i-rtc.h>
++#include <dt-bindings/interrupt-controller/arm-gic.h>
++#include <dt-bindings/interrupt-controller/irq.h>
++#include <dt-bindings/reset/sun20i-d1-ccu.h>
++#include <dt-bindings/reset/sun20i-d1-r-ccu.h>
++
++/ {
++	#address-cells = <1>;
++	#size-cells = <1>;
++	interrupt-parent = <&gic>;
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu0: cpu@0 {
++			compatible = "arm,cortex-a7";
++			device_type = "cpu";
++			reg = <0>;
++			clocks = <&ccu CLK_CPUX>;
++			clock-names = "cpu";
++		};
++
++		cpu1: cpu@1 {
++			compatible = "arm,cortex-a7";
++			device_type = "cpu";
++			reg = <1>;
++			clocks = <&ccu CLK_CPUX>;
++			clock-names = "cpu";
++		};
++	};
++
++	gic: interrupt-controller@3021000 {
++		compatible = "arm,gic-400";
++		reg = <0x03021000 0x1000>,
++		      <0x03022000 0x2000>,
++		      <0x03024000 0x2000>,
++		      <0x03026000 0x2000>;
++		interrupts = <GIC_PPI 9 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>;
++		interrupt-controller;
++		#interrupt-cells = <3>;
++	};
++
++	timer {
++		compatible = "arm,armv7-timer";
++		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
++			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
++			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
++			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>;
++	};
++
++	dcxo: dcxo-clk {
++		compatible = "fixed-clock";
++		clock-output-names = "dcxo";
++		#clock-cells = <0>;
++	};
++
++	soc: soc {
++		compatible = "simple-bus";
++		ranges;
++		#address-cells = <1>;
++		#size-cells = <1>;
++
++		pio: pinctrl@2000000 {
++			compatible = "allwinner,sun8i-t153-pinctrl",
++				     "allwinner,sun20i-d1-pinctrl";
++			reg = <0x2000000 0x800>;
++			interrupts = <SOC_PERIPHERAL_IRQ(69) IRQ_TYPE_LEVEL_HIGH>,
++				     <SOC_PERIPHERAL_IRQ(71) IRQ_TYPE_LEVEL_HIGH>,
++				     <SOC_PERIPHERAL_IRQ(73) IRQ_TYPE_LEVEL_HIGH>,
++				     <SOC_PERIPHERAL_IRQ(75) IRQ_TYPE_LEVEL_HIGH>,
++				     <SOC_PERIPHERAL_IRQ(77) IRQ_TYPE_LEVEL_HIGH>,
++				     <SOC_PERIPHERAL_IRQ(79) IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&ccu CLK_APB0>,
++				 <&dcxo>,
++				 <&rtc CLK_OSC32K>;
++			clock-names = "apb", "hosc", "losc";
++			gpio-controller;
++			interrupt-controller;
++			#gpio-cells = <3>;
++			#interrupt-cells = <3>;
++
++			/omit-if-no-ref/
++			mmc0_pins: mmc0-pins {
++				pins = "PF0", "PF1", "PF2", "PF3", "PF4", "PF5";
++				function = "mmc0";
++			};
++
++			/omit-if-no-ref/
++			uart0_pb_pins: uart0-pb-pins {
++				pins = "PB9", "PB10";
++				function = "uart0";
++			};
++		};
++
++		ccu: clock-controller@2001000 {
++			compatible = "allwinner,sun8i-t153-ccu",
++				     "allwinner,sun20i-d1-ccu";
++			reg = <0x2001000 0x1000>;
++			clocks = <&dcxo>,
++				 <&rtc CLK_OSC32K>,
++				 <&rtc CLK_IOSC>;
++			clock-names = "hosc", "losc", "iosc";
++			#clock-cells = <1>;
++			#reset-cells = <1>;
++		};
++
++		wdt: watchdog@20500a0 {
++			compatible = "allwinner,sun20i-d1-wdt-reset",
++				     "allwinner,sun20i-d1-wdt";
++			reg = <0x20500a0 0x20>;
++			interrupts = <SOC_PERIPHERAL_IRQ(63) IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&dcxo>, <&rtc CLK_OSC32K>;
++			clock-names = "hosc", "losc";
++			status = "reserved";
++		};
++
++		uart0: serial@2500000 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x2500000 0x400>;
++			reg-io-width = <4>;
++			reg-shift = <2>;
++			interrupts = <SOC_PERIPHERAL_IRQ(2) IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&ccu CLK_BUS_UART0>;
++			resets = <&ccu RST_BUS_UART0>;
++			status = "disabled";
++		};
++
++		mmc0: mmc@4020000 {
++			compatible = "allwinner,sun8i-t153-mmc",
++				     "allwinner,sun20i-d1-mmc";
++			reg = <0x4020000 0x1000>;
++			interrupts = <SOC_PERIPHERAL_IRQ(40) IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&ccu CLK_BUS_MMC0>, <&ccu CLK_MMC0>;
++			clock-names = "ahb", "mmc";
++			resets = <&ccu RST_BUS_MMC0>;
++			reset-names = "ahb";
++			cap-sd-highspeed;
++			max-frequency = <150000000>;
++			no-mmc;
++			status = "disabled";
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		mmc2: mmc@4022000 {
++			compatible = "allwinner,sun8i-t153-emmc",
++				     "allwinner,sun20i-d1-emmc",
++				     "allwinner,sun50i-a100-emmc";
++			reg = <0x4022000 0x1000>;
++			interrupts = <SOC_PERIPHERAL_IRQ(42) IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&ccu CLK_BUS_MMC2>, <&ccu CLK_MMC2>;
++			clock-names = "ahb", "mmc";
++			resets = <&ccu RST_BUS_MMC2>;
++			reset-names = "ahb";
++			cap-mmc-highspeed;
++			max-frequency = <150000000>;
++			no-sd;
++			no-sdio;
++			status = "disabled";
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++	};
++
++	rtc: rtc@7000000 {
++		compatible = "allwinner,sun20i-d1-rtc",
++			     "allwinner,sun50i-r329-rtc";
++		reg = <0x7000000 0x400>;
++		interrupts = <SOC_PERIPHERAL_IRQ(144) IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&r_ccu CLK_BUS_R_RTC>,
++			 <&dcxo>,
++			 <&r_ccu CLK_R_AHB>;
++		clock-names = "bus", "hosc", "ahb";
++		#clock-cells = <1>;
++	};
++
++	r_ccu: clock-controller@7010000 {
++		compatible = "allwinner,sun20i-d1-r-ccu";
++		reg = <0x7010000 0x400>;
++		clocks = <&dcxo>,
++			 <&rtc CLK_OSC32K>,
++			 <&rtc CLK_IOSC>,
++			 <&ccu CLK_PLL_PERIPH0>;
++		clock-names = "hosc", "losc", "iosc", "pll-periph";
++		#clock-cells = <1>;
++		#reset-cells = <1>;
++	};
++};
+--- /dev/null
 +++ b/arch/arm/dts/sun8i-t153-153-demo.dts
 @@ -0,0 +1,37 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright (C) 2024  Allwinner T153 153-Demo Board
-+ * Based on sun8i-t113s (T153/sun8iw22p1 is register-compatible with T113-Super)
 + */
 +
 +/dts-v1/;
-+#include "sun8i-t113s.dtsi"
++#include "sun8i-t153.dtsi"
 +
 +#include <dt-bindings/gpio/gpio.h>
 +
 +/ {
 +	model = "Allwinner T153 153-Demo Board";
-+	compatible = "allwinner,t153-153-demo", "allwinner,sun8i-t153",
-+		     "allwinner,sun8i-t113s";
++	compatible = "allwinner,t153-153-demo", "allwinner,sun8i-t153";
 +
 +	aliases {
 +		serial0 = &uart0;
@@ -29,7 +232,7 @@
 +
 +&uart0 {
 +	pinctrl-names = "default";
-+	pinctrl-0 = <&uart0_pb8_pins>;
++	pinctrl-0 = <&uart0_pb_pins>;
 +	status = "okay";
 +};
 +
