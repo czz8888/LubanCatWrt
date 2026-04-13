@@ -1,16 +1,16 @@
 From 9e12a7fd80276092da3a43b7dbaf572bad294419 Mon Sep 17 00:00:00 2001
 From: Samuel Holland <samuel@sholland.org>
 Date: Thu, 4 Aug 2022 23:29:13 -0500
-Subject: [PATCH] sunxi: Add missing SPL dependency to SPL_SYS_THUMB_BUILD selection
+Subject: [PATCH] sunxi: Add missing SPL dependency to SPL_SYS_THUMB_BUILD and SPL_USE_TINY_PRINTF selection
 
-SPL_SYS_THUMB_BUILD has a direct dependency on SPL. Make the selection
-conditional on SPL to avoid creating an invalid configuration and
-suppress the Kconfig unmet-dependency warning.
+SPL_SYS_THUMB_BUILD and SPL_USE_TINY_PRINTF have a direct dependency on
+SPL. Make the selections conditional on SPL to avoid creating an invalid
+configuration and suppress the Kconfig unmet-dependency warnings.
 
 Signed-off-by: Samuel Holland <samuel@sholland.org>
 ---
- arch/arm/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/Kconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 --- a/arch/arm/Kconfig
 +++ b/arch/arm/Kconfig
@@ -23,3 +23,11 @@ Signed-off-by: Samuel Holland <samuel@sholland.org>
  	select SUNXI_GPIO
  	select SYS_NS16550
  	select SYS_THUMB_BUILD if !ARM64
+@@ -1150,7 +1150,7 @@ config ARCH_SUNXI
+ 	select USB if DISTRO_DEFAULTS
+ 	select USB_KEYBOARD if DISTRO_DEFAULTS && USB_HOST
+ 	select USB_STORAGE if DISTRO_DEFAULTS && USB_HOST
+-	select SPL_USE_TINY_PRINTF
++	select SPL_USE_TINY_PRINTF if SPL
+ 	select USE_PREBOOT
+ 	select SYS_RELOC_GD_ENV_ADDR
