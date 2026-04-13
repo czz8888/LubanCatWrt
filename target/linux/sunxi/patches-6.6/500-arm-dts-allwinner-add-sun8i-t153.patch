@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/arch/arm/boot/dts/allwinner/sun8i-t153.dtsi
-@@ -0,0 +1,461 @@
+@@ -0,0 +1,469 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright (C) 2024  Allwinner T153 (sun8iw22p1) SoC support
@@ -78,6 +78,7 @@
 +
 +	dcxo: dcxo-clk {
 +		compatible = "fixed-clock";
++		clock-frequency = <24000000>;
 +		clock-output-names = "dcxo";
 +		#clock-cells = <0>;
 +	};
@@ -118,6 +119,13 @@
 +			uart0_pb_pins: uart0-pb-pins {
 +				pins = "PB9", "PB10";
 +				function = "uart0";
++			};
++
++			/omit-if-no-ref/
++			mmc2_pins: mmc2-pins {
++				pins = "PC0", "PC1", "PC2", "PC3", "PC4", "PC5",
++				       "PC6", "PC7", "PC8", "PC9", "PC10", "PC11";
++				function = "mmc2";
 +			};
 +
 +			/omit-if-no-ref/
@@ -464,7 +472,7 @@
 +};
 --- /dev/null
 +++ b/arch/arm/boot/dts/allwinner/sun8i-t153-153-demo.dts
-@@ -0,0 +1,120 @@
+@@ -0,0 +1,129 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright (C) 2024  Allwinner T153 153-demo reference board
@@ -524,6 +532,15 @@
 +	vmmc-supply = <&reg_vcc3v3>;
 +	cd-gpios = <&pio 5 6 GPIO_ACTIVE_LOW>; /* PF6 */
 +	bus-width = <4>;
++	status = "okay";
++};
++
++/* eMMC on PC0-PC11 */
++&mmc2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&mmc2_pins>;
++	bus-width = <8>;
++	non-removable;
 +	status = "okay";
 +};
 +

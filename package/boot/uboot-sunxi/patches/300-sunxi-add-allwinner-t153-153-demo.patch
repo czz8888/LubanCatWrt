@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/arch/arm/dts/sun8i-t153.dtsi
-@@ -0,0 +1,209 @@
+@@ -0,0 +1,210 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Allwinner T153 (sun8iw22p1) SoC device tree source for u-boot.
@@ -67,6 +67,7 @@
 +
 +	dcxo: dcxo-clk {
 +		compatible = "fixed-clock";
++		clock-frequency = <24000000>;
 +		clock-output-names = "dcxo";
 +		#clock-cells = <0>;
 +	};
@@ -212,7 +213,7 @@
 +};
 --- /dev/null
 +++ b/arch/arm/dts/sun8i-t153-153-demo.dts
-@@ -0,0 +1,45 @@
+@@ -0,0 +1,46 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright (C) 2024  Allwinner T153 153-Demo Board
@@ -230,6 +231,7 @@
 +	aliases {
 +		serial0 = &uart0;
 +		mmc0 = &mmc0;
++		mmc1 = &mmc2;
 +	};
 +
 +	chosen {
