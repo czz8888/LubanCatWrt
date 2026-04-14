@@ -15,6 +15,7 @@ PKG_RELEASE:=1
 
 PKG_MAINTAINER:=LubanCat
 
+PKG_SOURCE_PROTO:=local
 PKG_SOURCE_DIR:=$(TOPDIR)/sunxi-uboot-src/u-boot-2023
 PKG_UBOOT_CONFIG:=$(TOPDIR)/sunxi-uboot-src/uboot-config
 
