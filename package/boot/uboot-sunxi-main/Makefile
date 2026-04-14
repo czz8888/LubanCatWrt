@@ -27,6 +27,9 @@ define U-Boot/Default
   UBOOT_IMAGE:=u-boot-sunxi-with-spl.bin
   UENV:=default
   HIDDEN:=1
+  # Board-specific device config directory under sunxi-uboot-src/.
+  # Override per target when the board config lives in a subdirectory.
+  BOARD_CONFIG_SUBDIR:=
 endef
 
 define U-Boot/allwinner_t153-153-demo
@@ -34,6 +37,7 @@ define U-Boot/allwinner_t153-153-demo
   NAME:=Allwinner T153 153-Demo Board (sunxi-main)
   BUILD_DEVICES:=allwinner_t153-153-demo
   UENV:=default
+  BOARD_CONFIG_SUBDIR:=HZ-T153_MiniEVM
 endef
 
 UBOOT_TARGETS := allwinner_t153-153-demo
@@ -56,7 +60,7 @@ endef
 define Build/Compile
 	+$(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR) \
 		CROSS_COMPILE=$(TARGET_CROSS) \
-		LICHEE_BOARD_CONFIG_DIR=$(TOPDIR)/sunxi-uboot-src \
+		LICHEE_BOARD_CONFIG_DIR=$(TOPDIR)/sunxi-uboot-src$(if $(BOARD_CONFIG_SUBDIR),/$(BOARD_CONFIG_SUBDIR)) \
 		$(UBOOT_MAKE_FLAGS)
 endef
 

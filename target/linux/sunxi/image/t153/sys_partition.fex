@@ -1,0 +1,44 @@
+;---------------------------------------------------------------------------------------------------
+; OpenWrt partition layout for Allwinner T153 (sun8iw22p1) - eMMC/SD boot
+;---------------------------------------------------------------------------------------------------
+
+[mbr]
+size = 16384
+
+[partition_start]
+
+[partition]
+    name         = boot-resource
+    size         = 65536
+    downloadfile = "boot-resource.fex"
+    user_type    = 0x8000
+
+[partition]
+    name         = env
+    size         = 1024
+    downloadfile = "env.fex"
+    user_type    = 0x8000
+
+[partition]
+    name         = env-redund
+    size         = 1024
+    downloadfile = "env.fex"
+    user_type    = 0x8000
+
+[partition]
+    name         = boot
+    size         = 131072
+    downloadfile = "boot.fex"
+    user_type    = 0x8000
+
+[partition]
+    name         = dtbo
+    size         = 2048
+    downloadfile = "dtbo.fex"
+    user_type    = 0x8000
+
+[partition]
+    name         = rootfs
+    size         = 0
+    downloadfile = "rootfs.fex"
+    user_type    = 0x8000

@@ -1161,6 +1161,10 @@ BOARD_DTS_EXIST = $(shell if [ -f $(DTS_PATH)/$(BOARD_DTS_NAME).dts ]; then echo
 
 DEVICE_BOARD_DTS_EXIST = $(shell if [ -f $(LICHEE_BOARD_CONFIG_DIR)/$(UBOOT_DIR)/uboot-board.dts ]; then echo yes; else echo no; fi;)
 
+# Strip surrounding quotes from Kconfig string values so the DTS file path
+# does not contain literal '"' characters (e.g. "uboot-board" → uboot-board).
+CONFIG_DEFAULT_DEVICE_TREE := $(patsubst "%",%,$(CONFIG_DEFAULT_DEVICE_TREE))
+
 # Timestamp file to make sure that binman always runs
 .binman_stamp: $(INPUTS-y) FORCE
 ifeq ($(CONFIG_BINMAN),y)
