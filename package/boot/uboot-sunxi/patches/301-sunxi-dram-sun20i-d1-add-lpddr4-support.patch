@@ -17,16 +17,55 @@ Also make the DRAM mode registers MR0-MR3 configurable via Kconfig
 (defaulting to the existing DDR3 values) so LPDDR4 boards can supply
 their own mode register settings without forking the driver.
 
+Add default values (0) to the existing DRAM_SUNXI_ODT_EN, DRAM_SUNXI_TPR0,
+DRAM_SUNXI_TPR11, DRAM_SUNXI_TPR12 and DRAM_SUNXI_TPR13 Kconfig options
+which previously had no defaults. Without defaults, U-Boot's syncconfig
+step (run during compilation) would interactively prompt for these values,
+failing with "Error in reading or end of file" in non-interactive builds.
+
 Signed-off-by: LubanCatWrt <chechesa666@github.com>
 ---
- drivers/ram/sunxi/Kconfig          |  40 ++++++++++
+ drivers/ram/sunxi/Kconfig          |  45 +++++++++++
  drivers/ram/sunxi/dram_sun20i_d1.c |  65 +++++++++++++---
  drivers/ram/sunxi/dram_sun20i_d1.h |   1 +
- 3 files changed, 94 insertions(+), 12 deletions(-)
+ 3 files changed, 99 insertions(+), 12 deletions(-)
 
 --- a/drivers/ram/sunxi/Kconfig
 +++ b/drivers/ram/sunxi/Kconfig
-@@ -48,6 +48,10 @@ config SUNXI_DRAM_TYPE_LPDDR2
+@@ -9,27 +9,32 @@ if DRAM_SUN20I_D1
+ 
+ config DRAM_SUNXI_ODT_EN
+ 	hex "DRAM ODT EN parameter"
++	default 0
+ 	help
+ 	  ODT EN value from vendor DRAM settings.
+ 
+ config DRAM_SUNXI_TPR0
+ 	hex "DRAM TPR0 parameter"
++	default 0
+ 	help
+ 	  TPR0 value from vendor DRAM settings.
+ 
+ config DRAM_SUNXI_TPR11
+ 	hex "DRAM TPR11 parameter"
++	default 0
+ 	help
+ 	  TPR11 value from vendor DRAM settings.
+ 
+ config DRAM_SUNXI_TPR12
+ 	hex "DRAM TPR12 parameter"
++	default 0
+ 	help
+ 	  TPR12 value from vendor DRAM settings.
+ 
+ config DRAM_SUNXI_TPR13
+ 	hex "DRAM TPR13 parameter"
++	default 0
+ 	help
+ 	  TPR13 value from vendor DRAM settings. It tells which features
+ 	  should be configured.
+ 
+@@ -48,6 +53,10 @@ config SUNXI_DRAM_TYPE_LPDDR2
  
  config SUNXI_DRAM_TYPE_LPDDR3
  	bool "LPDDR3 chips"
@@ -37,7 +76,7 @@ Signed-off-by: LubanCatWrt <chechesa666@github.com>
  endchoice
  
  config SUNXI_DRAM_TYPE
-@@ -56,5 +60,35 @@ config SUNXI_DRAM_TYPE
+@@ -56,5 +65,35 @@ config SUNXI_DRAM_TYPE
  	default 3 if SUNXI_DRAM_TYPE_DDR3
  	default 6 if SUNXI_DRAM_TYPE_LPDDR2
  	default 7 if SUNXI_DRAM_TYPE_LPDDR3
