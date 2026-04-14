@@ -372,13 +372,6 @@ define U-Boot/bananapi_p2_zero
   BUILD_DEVICES:=sinovoip_bananapi-p2-zero
 endef
 
-define U-Boot/allwinner_t153-153-demo
-  BUILD_SUBTARGET:=cortexa7
-  NAME:=Allwinner T153 153-Demo Board
-  BUILD_DEVICES:=allwinner_t153-153-demo
-  UENV:=default
-endef
-
 UBOOT_TARGETS := \
 	a64-olinuxino \
 	a64-olinuxino-emmc \
@@ -430,8 +423,7 @@ UBOOT_TARGETS := \
 	Sinovoip_BPI_M3 \
 	sopine_baseboard \
 	orangepi_zero_plus \
-	libretech_all_h3_cc_h5 \
-	allwinner_t153-153-demo
+	libretech_all_h3_cc_h5
 
 UBOOT_CONFIGURE_VARS += USE_PRIVATE_LIBGCC=yes
 
