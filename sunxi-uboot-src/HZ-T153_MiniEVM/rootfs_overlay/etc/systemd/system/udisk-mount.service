@@ -1,0 +1,12 @@
+[Unit]
+Description=Check and mount UDISK partition
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/udisk-mount.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+

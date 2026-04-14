@@ -1,0 +1,4 @@
+LICHEE_BRANDY_DEFCONF:=sun8iw22p1_t153_bga_mmc_defconfig
+LICHEE_REDUNDANT_ENV_SIZE:=0x20000
+LICHEE_ROOTFS:=ubuntu22.04.tar.bz2
+LICHEE_FS_OVERLAY:=rootfs_overlay
