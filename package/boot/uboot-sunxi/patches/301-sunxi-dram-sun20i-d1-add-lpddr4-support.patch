@@ -26,17 +26,18 @@ Signed-off-by: LubanCatWrt <chechesa666@github.com>
 
 --- a/drivers/ram/sunxi/Kconfig
 +++ b/drivers/ram/sunxi/Kconfig
-@@ -24,6 +24,9 @@ config SUNXI_DRAM_TYPE_LPDDR2
+@@ -48,6 +48,10 @@ config SUNXI_DRAM_TYPE_LPDDR2
+ 
  config SUNXI_DRAM_TYPE_LPDDR3
  	bool "LPDDR3 chips"
- 
++
 +config SUNXI_DRAM_TYPE_LPDDR4
 +	bool "LPDDR4 chips"
 +
  endchoice
  
  config SUNXI_DRAM_TYPE
-@@ -31,6 +34,43 @@ config SUNXI_DRAM_TYPE
+@@ -56,5 +60,35 @@ config SUNXI_DRAM_TYPE
  	default 3 if SUNXI_DRAM_TYPE_DDR3
  	default 6 if SUNXI_DRAM_TYPE_LPDDR2
  	default 7 if SUNXI_DRAM_TYPE_LPDDR3
@@ -74,7 +75,8 @@ Signed-off-by: LubanCatWrt <chechesa666@github.com>
  endif
 --- a/drivers/ram/sunxi/dram_sun20i_d1.h
 +++ b/drivers/ram/sunxi/dram_sun20i_d1.h
-@@ -14,6 +14,7 @@ enum sunxi_dram_type {
+@@ -15,6 +15,7 @@ enum sunxi_dram_type {
+ enum sunxi_dram_type {
  	SUNXI_DRAM_TYPE_DDR2 = 2,
  	SUNXI_DRAM_TYPE_DDR3 = 3,
 +	SUNXI_DRAM_TYPE_LPDDR4 = 4,
@@ -83,7 +85,7 @@ Signed-off-by: LubanCatWrt <chechesa666@github.com>
  };
 --- a/drivers/ram/sunxi/dram_sun20i_d1.c
 +++ b/drivers/ram/sunxi/dram_sun20i_d1.c
-@@ -194,6 +194,45 @@ static void mctl_set_timing_params(const dram_para_t *para,
+@@ -194,6 +194,46 @@ static void mctl_set_timing_params(const dram_para_t *para,
  		mr0		= 0;
  
  		break;
@@ -130,7 +132,7 @@ Signed-off-by: LubanCatWrt <chechesa666@github.com>
  	default:
  		trfc		= 128;
  		trp		= 6;
-@@ -281,8 +320,10 @@ static void mctl_com_init(const dram_para_t *para, const dram_config_t *config)
+@@ -281,8 +320,9 @@ static void mctl_com_init(const dram_para_t *para, const dram_config_t *config)
  	val |= (~config->dram_para2 & 0x1) << 12;		// DQ width
  	val |= BIT(22);					// ??
  	if (para->dram_type == SUNXI_DRAM_TYPE_LPDDR2 ||
@@ -142,7 +144,7 @@ Signed-off-by: LubanCatWrt <chechesa666@github.com>
  	} else {
  		if (config->dram_tpr13 & BIT(5))
  			val |= BIT(19);
-@@ -369,8 +410,10 @@ static unsigned int mctl_channel_init(unsigned int ch_index,
+@@ -369,7 +410,8 @@ static unsigned int mctl_channel_init(unsigned int ch_index,
  
  	if (para->dram_type == SUNXI_DRAM_TYPE_LPDDR2 ||
 -	    para->dram_type == SUNXI_DRAM_TYPE_LPDDR3) {
@@ -153,7 +155,7 @@ Signed-off-by: LubanCatWrt <chechesa666@github.com>
  			clrsetbits_le32(0x310311c, 0x080000c0, 0x80000000);
  		else
  			clrsetbits_le32(0x310311c, 0x77000000, 0x22000000);
-@@ -475,10 +518,10 @@ static const dram_para_t para = {
+@@ -475,10 +517,10 @@ static const dram_para_t para = {
  	.dram_clk	= CONFIG_DRAM_CLK,
  	.dram_type	= CONFIG_SUNXI_DRAM_TYPE,
  	.dram_zq	= CONFIG_DRAM_ZQ,
