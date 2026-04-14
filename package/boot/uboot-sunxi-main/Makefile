@@ -38,6 +38,7 @@ define U-Boot/allwinner_t153-153-demo
   BUILD_DEVICES:=allwinner_t153-153-demo
   UENV:=default
   BOARD_CONFIG_SUBDIR:=HZ-T153_MiniEVM
+  UBOOT_IMAGE:=u-boot-sun8iw22p1.bin
 endef
 
 UBOOT_TARGETS := allwinner_t153-153-demo
