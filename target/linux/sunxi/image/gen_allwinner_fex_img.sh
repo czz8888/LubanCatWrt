@@ -75,14 +75,22 @@ if command -v mkbootimg >/dev/null 2>&1; then
 	KERNEL_SIZE="$(wc -c < "$KERNEL_IMAGE")"
 	# Align DTB offset to next 1 MiB boundary above kernel
 	DTB_OFFSET=$(( ( (0x80000 + KERNEL_SIZE + 0x1fffff) / 0x100000 ) * 0x100000 ))
-	mkbootimg \
-		--kernel "$KERNEL_IMAGE" \
-		--base 0x40000000 \
-		--kernel_offset 0x80000 \
-		--dtb "$KERNEL_DTB" \
-		--dtb_offset "$DTB_OFFSET" \
-		--header_version 2 \
-		-o "$STAGING_DIR/boot.fex"
+	# Header version 2 (with --dtb/--dtb_offset) requires a newer mkbootimg
+	# (AOSP/Android 10+).  Older distro-packaged versions only support v0.
+	if mkbootimg --help 2>&1 | grep -q -- '--header_version'; then
+		mkbootimg \
+			--kernel "$KERNEL_IMAGE" \
+			--base 0x40000000 \
+			--kernel_offset 0x80000 \
+			--dtb "$KERNEL_DTB" \
+			--dtb_offset "$DTB_OFFSET" \
+			--header_version 2 \
+			-o "$STAGING_DIR/boot.fex"
+	else
+		echo "WARNING: installed mkbootimg does not support --header_version 2;" \
+		     "falling back to raw kernel+DTB concatenation for boot.fex." >&2
+		cat "$KERNEL_IMAGE" "$KERNEL_DTB" > "$STAGING_DIR/boot.fex"
+	fi
 else
 	echo "WARNING: mkbootimg not found; copying raw kernel as boot.fex." >&2
 	cat "$KERNEL_IMAGE" "$KERNEL_DTB" > "$STAGING_DIR/boot.fex"
