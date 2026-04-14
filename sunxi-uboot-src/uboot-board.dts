@@ -1,0 +1,215 @@
+// SPDX-License-Identifier: (GPL-2.0+ or MIT)
+/*
+ * Allwinner Technology CO., Ltd. sun8iw21p1 platform
+ *
+ * modify base on juno.dts
+ */
+
+/dts-v1/;
+
+#include "sun8iw22p1.dtsi"
+
+/ {
+	model = "sun8iw22";
+	compatible = "allwinner,t153", "arm,sun8iw55p1";
+
+	aliases {
+		serial0 = &uart0;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+
+	firmware {
+		optee {
+			shm_base = <0x42500000>;	/* shm must between 0x42500000-->0x4290000 */
+			shm_size = <0x00400000>;
+		//	optee_base = <0x42900000>;
+		//	optee_size = <0x00100000>;
+			ta_ram_base = <0x42A00000>;	/* ta  must between 0x42A00000-->0x43300000 */
+			ta_ram_size = <0x00900000>;
+		};
+	};
+};
+
+&pio {
+	gmac0_pins_default: gmac0@0 {
+		pins = "PJ0", "PJ1", "PJ2", "PJ3", "PJ4", "PJ5", "PJ6", "PJ7",
+			"PJ8", "PJ9", "PJ10", "PJ11", "PJ12", "PJ13", "PJ14", "PJ15";
+		function = "rgmii0_pj";
+		drive-strength = <40>;
+		bias-pull-up;
+	};
+	gmac1_pins_default: gmac1@0 {
+		pins = "PG0", "PG1", "PG2", "PG3", "PG4", "PG5", "PG6", "PG7",
+			"PG8", "PG9", "PG10", "PG11", "PG12", "PG13", "PG14", "PG15";
+		function = "rgmii1";
+		drive-strength = <40>;
+		bias-pull-up;
+	};
+};
+
+&mmc0 {
+	/*cd-gpios = <&pio 5 6 GPIO_ACTIVE_LOW>;*/	/* PF6 */
+	bus-width = <4>;
+	status = "disabled";
+};
+
+&mmc2 {
+	bus-width = <8>;
+	cap-mmc-highspeed;
+	mmc-ddr-1_8v;
+	max-frequency = <50000000>;
+	sdc_ex_dly_used = <2>;
+	sdc_tm4_hs200_max_freq = <200>;
+	sdc_tm4_hs400_max_freq = <150>;
+	sdc_tm4_win_th = <0x7>;
+	sdc_io_1v8 = <0x1>;
+	status = "disabled";
+};
+
+&uart0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart0_ph_pins>;
+	status = "okay";
+};
+
+&platform {
+	eraseflag = <1>;
+	debug_mode = <4>;
+};
+
+&target {
+	boot_clock = <1008>;	/*CPU boot frequency, Unit: MHz*/
+	auto_fel = <0>;		/*1:support auto fel; 0:not support auto fel*/
+	burn_key = <1>;		/*1:support burn key; 0:not support burn key*/
+};
+
+&udc0 {
+	status = "okay";
+};
+
+&udc_phy {
+	status = "okay";
+};
+
+&ehci0 {
+	//vbus-gpio = <&pio 1 2 GPIO_ACTIVE_HIGH>;  // GPIO : PB2
+	status = "okay";
+};
+
+&ehci1 {
+	//vbus-gpio = <&pio 1 3 GPIO_ACTIVE_HIGH>;  // GPIO : PB3
+	status = "okay";
+};
+
+&gmac0 {
+	phy-mode = "rgmii";
+	max-speed = <1000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&gmac0_pins_default>;
+	aw,soc-phy-clk-en;
+	tx-delay = <9>;
+	rx-delay = <6>;
+	snps,reset-gpio = <&pio 4 0 GPIO_ACTIVE_HIGH>; 	// PE0
+	snps,reset-delays-us = <0 10000 30000>;
+	status = "disabled";
+};
+
+&gmac1 {
+	phy-mode = "rgmii";
+	max-speed = <1000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&gmac1_pins_default>;
+	aw,soc-phy-clk-en;
+	tx-delay = <9>;
+	rx-delay = <5>;
+	snps,reset-gpio = <&pio 4 9 GPIO_ACTIVE_HIGH>; // PE9
+	snps,reset-delays-us = <0 10000 30000>;
+	status = "disabled";
+};
+
+&sunxi_drm {
+	status = "okay";
+};
+
+&de {
+	chn_cfg_mode = <3>;
+	status = "okay";
+};
+
+&vo0 {
+	status = "okay";
+};
+
+&lcd0 {
+	status = "okay";
+};
+
+&dsi0 {
+	status = "okay";
+	pinctrl-0 = <&dsi0_4lane_pins_a>;
+	pinctrl-1 = <&dsi0_4lane_pins_b>;
+	pinctrl-names = "active","sleep";
+
+	panel: panel@0 {
+		compatible = "panel-dsi";
+		status = "okay";
+		reg = <0>;
+//		power-delay-ms = <10>;
+//		power0-supply = <&reg_axp2202_dcdc4>;
+//		power1-supply = <&reg_axp2202_cldo1>;
+
+		//hdmi enabled by lt8912 driver
+		//enable0-gpios = <&pio PB 6 GPIO_ACTIVE_HIGH>; //reset
+		//reset-gpios = <&pio PI 12 GPIO_ACTIVE_HIGH>;
+		reset-num = <2>;
+		reset-delay-ms = <20>;
+//		backlight = <&backlight0>;
+		dsi,flags = <(MIPI_DSI_MODE_VIDEO)>;
+		dsi,lanes = <4>;
+		dsi,format = <0>;
+
+		panel-init-sequence = [];
+		panel-exit-sequence = [];
+
+		display-timings {
+			native-mode = <&timing0>;
+			timing0: timing0 {
+			        clock-frequency = <148500000>;
+                                hback-porch = <148>;
+                                hactive = <1920>;
+                                hfront-porch = <88>;
+                                hsync-len = <44>;
+                                vback-porch = <36>;
+                                vactive = <1080>;
+                                vfront-porch = <4>;
+                                vsync-len = <5>;
+			};
+		};
+
+		port {
+			dsi_panel_in: endpoint {
+				remote-endpoint = <&dsi0_panel_out>;
+			};
+		};
+	};
+	ports {
+		port@1 {
+			dsi0_panel_out: endpoint@0 {
+				remote-endpoint = <&dsi_panel_in>;
+			};
+		};
+	};
+};
+
+&dsi0combophy {
+	status = "okay";
+};
+
+
+&route_dsi0 {
+        status = "okay";
+	logo,uboot = "bootlogo.bmp";
+};
