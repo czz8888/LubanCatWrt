@@ -53,6 +53,13 @@ define Build/Configure
 		olddefconfig
 endef
 
+define Build/Compile
+	+$(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR) \
+		CROSS_COMPILE=$(TARGET_CROSS) \
+		LICHEE_BOARD_CONFIG_DIR=$(TOPDIR)/sunxi-uboot-src \
+		$(UBOOT_MAKE_FLAGS)
+endef
+
 define Build/InstallDev
 	$(INSTALL_DIR) $(STAGING_DIR_IMAGE)
 	$(CP) $(PKG_BUILD_DIR)/$(UBOOT_IMAGE) $(STAGING_DIR_IMAGE)/$(BUILD_DEVICES)-u-boot-with-spl.bin

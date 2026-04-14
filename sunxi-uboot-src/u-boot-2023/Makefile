@@ -292,10 +292,10 @@ ifeq (x$(config_check), xyes)
 endif
 
 ifeq (x$(CONFIG_RISCV), xy)
-DTS_PATH := $(PWD)/arch/riscv/dts
+DTS_PATH := $(CURDIR)/arch/riscv/dts
 AW_DTS_PATH := $(srctree)/bsp/arch/riscv/dts
 endif
-DTS_PATH ?= $(PWD)/arch/arm/dts
+DTS_PATH ?= $(CURDIR)/arch/arm/dts
 AW_DTS_PATH ?= $(srctree)/bsp/arch/arm/dts
 export CROSS_COMPILE
 
