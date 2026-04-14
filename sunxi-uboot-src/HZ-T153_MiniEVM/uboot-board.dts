@@ -152,6 +152,8 @@
 	pinctrl-0 = <&dsi0_4lane_pins_a>;
 	pinctrl-1 = <&dsi0_4lane_pins_b>;
 	pinctrl-names = "active","sleep";
+	#address-cells = <1>;
+	#size-cells = <0>;
 
 	panel: panel@0 {
 		compatible = "panel-dsi";
