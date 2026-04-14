@@ -56,7 +56,7 @@ endef
 define Build/Compile
 	+$(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR) \
 		CROSS_COMPILE=$(TARGET_CROSS) \
-		LICHEE_BOARD_CONFIG_DIR=$(TOPDIR)/sunxi-uboot-src \
+		LICHEE_BOARD_CONFIG_DIR=$(TOPDIR)/sunxi-uboot-src/HZ-T153_MiniEVM \
 		$(UBOOT_MAKE_FLAGS)
 endef
 

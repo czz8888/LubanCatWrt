@@ -261,10 +261,27 @@ define Device/xunlong_orangepi-2
 endef
 TARGET_DEVICES += xunlong_orangepi-2
 
+define Build/allwinner-fex-img
+	$(TOPDIR)/target/linux/sunxi/image/gen_allwinner_fex_img.sh \
+		$(BIN_DIR)/$(DEVICE_NAME)-fex-staging \
+		$(STAGING_DIR_IMAGE)/$(DEVICE_NAME)-u-boot-with-spl.bin \
+		$(STAGING_DIR_IMAGE)/$(DEVICE_NAME)-u-boot-with-spl.bin \
+		$(IMAGE_KERNEL) \
+		$(DTS_DIR)/$(SUNXI_DTS).dtb \
+		$(IMAGE_ROOTFS) \
+		$(TOPDIR)/sunxi-uboot-src/HZ-T153_MiniEVM/sys_config.fex \
+		$(TOPDIR)/target/linux/sunxi/image/t153/sys_partition.fex \
+		$(TOPDIR)/target/linux/sunxi/image/t153/env.cfg
+	tar -czf $@ -C $(BIN_DIR) $(DEVICE_NAME)-fex-staging
+endef
+
 define Device/allwinner_t153-153-demo
   DEVICE_VENDOR := Allwinner
   DEVICE_MODEL := T153 153-Demo Board
   SOC := sun8i-t153
   SUNXI_DTS := $$(SUNXI_DTS_DIR)sun8i-t153-153-demo
+  IMAGES := sdcard.img.gz fex-pkg.tar.gz
+  IMAGE/sdcard.img.gz := sunxi-sdcard | append-metadata | gzip
+  IMAGE/fex-pkg.tar.gz := allwinner-fex-img | append-metadata
 endef
 TARGET_DEVICES += allwinner_t153-153-demo
