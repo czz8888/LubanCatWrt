@@ -1,0 +1,11 @@
+config AW_DMA
+         bool "SUNXI DMA driver"
+         help
+           Support for SUNXI DMA controller.
+config AW_DMA_NO_RESET
+         bool "SUNXI DMA driver clock not reset"
+         depends on AW_DMA
+         default n
+         help
+           This will not reset the clock
+

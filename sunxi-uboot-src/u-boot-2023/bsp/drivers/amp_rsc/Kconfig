@@ -1,0 +1,76 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+menu "Resource Isolation Driver"
+
+config AW_AMP_SYS_RSC_MANAGER
+	bool "Enable Allwinner AMP System Resourece Manager(ASRM)"
+	default n
+
+if AW_AMP_SYS_RSC_MANAGER
+choice
+	prompt "ASRM Run Environment"
+	default ASRM_RUN_ON_LINUX_KERNEL
+
+config ASRM_RUN_ON_UBOOT
+	bool "Run On U-boot"
+	select ASRM_DEFAULT_SELECT_ON_UBOOT
+
+config ASRM_RUN_ON_RTOS
+	bool "Run On RTOS"
+	select ASRM_DEFAULT_SELECT_ON_RTOS
+
+config ASRM_RUN_ON_LINUX_KERNEL
+	bool "Run On Linux Kernel"
+	select ASRM_DEFAULT_SELECT_ON_LINUX_KERNEL
+
+endchoice
+
+config AW_CURRENT_AMP_SYS_RSC_USER_ID
+	int "Current AMP system resource user id in ASRM"
+	default 0
+	help
+	  Current AMP system resource user id, depend on specific platform.
+	  You can find all available user id in lowlevel/platform/platform_rsc_user_id.h.
+
+config AW_GPIO_ISOLATION_DRIVER
+	bool "Enable GPIO Isolation Driver"
+	default n
+
+if ASRM_RUN_ON_UBOOT
+config ASRM_DEFAULT_SELECT_ON_UBOOT
+	bool
+	select AW_RPROC_RSC_HELPER
+	select AW_RPROC_USER_RESOURCE
+
+config AW_DMA_ISOLATION_DRIVER
+	bool "Enable DMA Isolation Driver"
+	default n
+
+endif # if ASRM_RUN_ON_UBOOT
+
+if ASRM_RUN_ON_LINUX_KERNEL
+config ASRM_DEFAULT_SELECT_ON_LINUX_KERNEL
+	bool
+	select AW_RPROC_SUBDEV
+	select AW_RPROC_SUBDEV_RSC_HELPER
+	select AW_RPROC_USER_RESOURCE
+
+config AW_ASRM_PROVIDE_PERI_CLK_INFO
+	bool "ASRM provide peripheral clock info for CCU driver"
+	default y
+
+endif # if ASRM_RUN_ON_LINUX_KERNEL
+
+if ASRM_RUN_ON_RTOS
+config ASRM_DEFAULT_SELECT_ON_RTOS
+	bool
+	select COMPONENTS_AMP_USER_RESOURCE
+	select AMP_USER_RESOURCE_3
+
+config AW_AMP_SYS_RSC_MANAGER_TEST
+	bool "ASRM test command"
+	default n
+
+endif # if ASRM_RUN_ON_RTOS
+
+endif # if AW_AMP_SYS_RSC_MANAGER
+endmenu

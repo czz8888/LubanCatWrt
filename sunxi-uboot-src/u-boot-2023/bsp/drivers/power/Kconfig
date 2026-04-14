@@ -1,0 +1,64 @@
+menuconfig AW_POWER
+	bool "Sunxi power device support"
+
+config AW_DM_PMIC
+	bool "Enable Driver Model for PMIC drivers (UCLASS_PMIC)"
+	depends on DM && AW_BSP && AW_POWER
+	---help---
+	This config enables the driver-model PMIC support.
+	UCLASS_PMIC - designed to provide an I/O interface for PMIC devices.
+	For the multi-function PMIC devices, this can be used as parent I/O
+	device for each IC's interface. Then, each children uses its parent
+	for read/write. For detailed description, please refer to the files:
+	- 'drivers/power/pmic/pmic-uclass.c'
+	- 'include/power/pmic.h'
+
+config AW_PMIC_CHILDREN
+	bool "Allow child devices for PMICs"
+	depends on AW_DM_PMIC
+	default y
+	---help---
+	This allows PMICs to support child devices (such as regulators) in
+	SPL. This adds quite a bit of code so if you are not using this
+	feature you can turn it off. Most likely you should turn it on for
+	U-Boot proper.
+
+config AW_PMIC_AXP
+	bool "Enable Driver Model for X-Powers AXP PMICs"
+	depends on DM_I2C && AW_DM_PMIC
+	select SYSRESET_CMD_POWEROFF if SYSRESET && CMD_POWEROFF
+	imply CMD_POWEROFF if SYSRESET
+	help
+	  This config enables driver-model PMIC uclass features for
+	  X-Powers AXP152, AXP2xx, and AXP8xx PMICs.
+
+config AW_REGULATOR_AXP
+	bool "Enable driver for X-Powers AXP PMIC regulators"
+	depends on AW_PMIC_AXP && DM_REGULATOR
+	help
+	  Enable support for the regulators (DCDCs, LDOs) in the
+	  X-Powers AXP152, AXP2xx, and AXP8xx PMICs.
+
+config AW_DM_SUPPLY
+	bool "Enable Driver Model for SUPPLY drivers (UCLASS_SUPPLY)"
+	depends on DM && AW_BSP && AW_POWER
+	---help---
+	This config enables the driver model regulator support.
+	UCLASS_SUPPLY - designed to provide a common API for basic regulator's
+	functions, like get/set Voltage or Current value, enable state, etc...
+	Note:
+	When enabling this, please read the description, found in the files:
+	- 'include/power/pmic.h'
+	- 'include/power/regulator.h'
+	- 'drivers/power/pmic/pmic-uclass.c'
+	- 'drivers/power/pmic/regulator-uclass.c'
+	It's important to call the device_bind() with the proper node offset,
+	when binding the regulator devices. The pmic_bind_childs() can be used
+	for this purpose if PMIC I/O driver is implemented or dm_scan_fdt_dev()
+	otherwise. Detailed information can be found in the header file.
+
+config AW_SUPPLY_AXP517
+	bool "Enable driver for X-Powers AXP PMIC supply"
+	depends on AW_PMIC_AXP && AW_DM_SUPPLY
+	help
+	  Enable support for the supply in the X-Powers PMICs.

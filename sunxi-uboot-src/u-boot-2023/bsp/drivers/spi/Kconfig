@@ -1,0 +1,15 @@
+config AW_SPI
+	bool "SUNXI SPI driver"
+	depends on SPI
+	default n
+	select HEXDUMP
+	help
+	  Support for SUNXI SPI controller.
+
+config AW_SPIF
+	bool "SUNXI SPIF driver"
+	depends on SPI
+	default n
+	select HEXDUMP
+	help
+	  Support for SUNXI SPI FLASH controller.

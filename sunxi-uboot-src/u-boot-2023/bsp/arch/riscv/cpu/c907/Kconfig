@@ -1,0 +1,4 @@
+config CPU_C907
+	bool "C907 riscv cpu"
+	help
+	  Run U-Boot on C907 platforms .

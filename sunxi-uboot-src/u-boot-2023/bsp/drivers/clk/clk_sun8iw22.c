@@ -1,0 +1,524 @@
+/*
+ * (C) Copyright 2013-2016
+ * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
+ *
+ * SPDX-License-Identifier:     GPL-2.0+
+ */
+#include <common.h>
+#include <clk-uclass.h>
+#include <dm.h>
+#include <errno.h>
+#include <clk/sunxi.h>
+#include <dt-bindings/clock/sun8iw22p1-ccu.h>
+#include <dt-bindings/reset/sun8iw22p1-ccu.h>
+#include <linux/bitops.h>
+#include <asm/arch/clock.h>
+#include <linux/clk-provider.h>
+#include "sunxi-clk.h"
+static struct ccu_reset sunxi_resets[] = {
+	[RST_BUS_MMC0]		= RESET(0xd0c, BIT(16)),
+	[RST_BUS_MMC1]		= RESET(0xd1c, BIT(16)),
+	[RST_BUS_MMC2]		= RESET(0xd2c, BIT(16)),
+	[RST_BUS_UART0]		= RESET(0xe00, BIT(16)),
+	[RST_BUS_UART1]		= RESET(0xe04, BIT(16)),
+	[RST_BUS_UART2]		= RESET(0xe08, BIT(16)),
+	[RST_BUS_UART3]		= RESET(0xe0c, BIT(16)),
+	[RST_BUS_UART4]		= RESET(0xe10, BIT(16)),
+	[RST_BUS_UART5]		= RESET(0xe14, BIT(16)),
+	[RST_BUS_UART6]		= RESET(0xe18, BIT(16)),
+	[RST_BUS_UART7]		= RESET(0xe20, BIT(16)),
+	[RST_BUS_UART8]		= RESET(0xe24, BIT(16)),
+	[RST_BUS_UART9]		= RESET(0xe28, BIT(16)),
+	[RST_BUS_SPI0]		= RESET(0x0f04, BIT(16)),
+	[RST_BUS_SPI1]		= RESET(0x0f0c, BIT(16)),
+	[RST_BUS_SPI2]		= RESET(0x0f14, BIT(16)),
+	[RST_BUS_SPI3]		= RESET(0x0f24, BIT(16)),
+	[RST_BUS_DMA0]		= RESET(0x0704, BIT(16)),
+	[RST_BUS_CE_SYS]	= RESET(0x0AC4, BIT(17)),
+	[RST_BUS_RV_CORE]	= RESET(0x0b94, BIT(16)),
+	[RST_BUS_RV_SYS]	= RESET(0x0b94, BIT(17)),
+	[RST_BUS_RV_CFG]	= RESET(0x0b9c, BIT(16)),
+	[RST_BUS_RV_AXIMON]	= RESET(0x1c00, BIT(16)),
+	[RST_BUS_OTG]           = RESET(0x1304, BIT(24)),
+	[RST_USB_PHY0]          = RESET(0x1344, BIT(16)),
+	[RST_USB_20_0_HOST_EHCI] = RESET(0x1304, BIT(20)),
+	[RST_USB_20_1_HOST_EHCI] = RESET(0x130c, BIT(20)),
+	[RST_USB_PHY0_RSTN]      = RESET(0x1344, BIT(16)),
+	[RST_BUS_DE0]		= RESET(0x0a04, BIT(16)),
+	[RST_BUS_VO0_REG]	= RESET(0x16c4, BIT(16)),
+	[RST_BUS_VIDEO_OUT0]	= RESET(0x16e4, BIT(16)),
+	[RST_BUS_TCON_LCD0]	= RESET(0x1504, BIT(16)),
+	[RST_BUS_MIPI_DSI0]	= RESET(0x1584, BIT(16)),
+	[RST_BUS_LVDS0]		= RESET(0x1544, BIT(16)),
+	[RST_BUS_GMAC0_AXI]	= RESET(0x140c, BIT(17)),
+	[RST_BUS_GMAC0_AHB]	= RESET(0x140c, BIT(16)),
+	[RST_BUS_GMAC1_AXI]	= RESET(0x141c, BIT(17)),
+	[RST_BUS_GMAC1_AHB]	= RESET(0x141c, BIT(16)),
+	[RST_BUS_GMAC2_AXI]	= RESET(0x142c, BIT(17)),
+	[RST_BUS_GMAC2_AHB]	= RESET(0x142c, BIT(16)),
+	[RST_BUS_TWI0] = RESET(0x0e80, BIT(16)),
+	[RST_BUS_TWI1] = RESET(0x0e84, BIT(16)),
+	[RST_BUS_TWI2] = RESET(0x0e88, BIT(16)),
+	[RST_BUS_TWI3] = RESET(0x0e8c, BIT(16)),
+	[RST_BUS_TWI4] = RESET(0x0e90, BIT(16)),
+	[RST_BUS_TWI5] = RESET(0x0e94, BIT(16)),
+	[RST_BUS_PWMCS0] = RESET(0x07C4, BIT(16)),
+	[RST_BUS_PWMCS1] = RESET(0x07CC, BIT(16)),
+	[RST_BUS_PWM2] = RESET(0x0794, BIT(16)),
+	[RST_BUS_SPIF] = RESET(0x0f1c, BIT(16)),
+};
+
+static const char * const mmc0_parents[] = {
+	"osc24M", "pll-peri0-400m", "pll-peri0-300m", "pll-peri1-400m", "pll-peri1-300m"
+};
+
+static const char * const mmc1_parents[] = {
+	"osc24M", "pll-peri0-400m", "pll-peri0-300m", "pll-peri1-400m", "pll-peri1-300m"
+};
+
+static const char * const mmc2_parents[] = {
+	"osc24M", "pll-peri0-800m", "pll-peri0-600m", "pll-peri1-800m", "pll-peri1-600m"
+};
+
+static const char * const apb1_parents[] = {
+	"osc24M", "ext32k", "rc16m", "pll-peri0-600m"
+};
+
+static const char * const spi_parents[] = {
+	"osc24M",
+	"pll-peri0-480m", "pll-peri0-300m", "pll-peri0-200m",
+	"pll-peri1-480m", "pll-peri1-300m", "pll-peri1-200m"
+};
+
+static const char * const spif_parents[] = {
+	"osc24M",
+	"pll-peri0-480m", "pll-peri0-400m", "pll-peri0-300m",
+	"pll-peri1-480m", "pll-peri1-400m", "pll-peri1-300m"
+};
+
+static const char * const ce_parents[] = {
+	"osc24M", "pll-peri0-400m", "pll-peri0-480m", "pll-peri0-600m"
+};
+
+static const char * const rv_core_parents[] = {
+	"osc24M", "rc16m", "ext32k", "pll-peri0-600m",
+	"pll-peri0-480m", "pll-peri0-400m",
+};
+
+static const char * const de_parents[] = {
+	"pll-peri0-600m", "pll-peri0-480m", "pll-peri0-400m", "pll-video0-4x", "pll-video0-3x"
+};
+
+static const char * const tcon_lcd0_parents[] = {
+	"pll-video0-4x", "pll-peri0-2x", "pll-peri1-2x", "pll-video0-3x"
+};
+
+
+static const char * const mipi_dsi0_parents[] = {
+	"osc24M", "pll-peri0-200m", "pll-peri0-150m"
+};
+
+static const char * const combophy0_parents[] = {
+	"pll-video0-4x", "pll-peri0-2x", "pll-peri1-2x", "pll-video0-3x"
+};
+
+enum enum_mux_cfg {
+	MUX_CLK_MMC0,
+	MUX_CLK_MMC1,
+	MUX_CLK_MMC2,
+	MUX_APB1,
+	MUX_CLK_SPI0,
+	MUX_CLK_SPI1,
+	MUX_CLK_SPI2,
+	MUX_CLK_SPI3,
+	MUX_CLK_CE,
+	MUX_CLK_RV_CORE,
+	MUX_CLK_DE,
+	MUX_CLK_TCONLCD0,
+	MUX_CLK_MIPIDSI0,
+	MUX_CLK_COMBOPHY0,
+	MUX_CLK_SPIF,
+};
+
+static const struct sunxi_mux_cfg sun8iw22_muxes[] = {
+	MUX_CFG(MUX_CLK_MMC0, mmc0_parents, 0xd00, 24, 3),
+	MUX_CFG(MUX_CLK_MMC1, mmc1_parents, 0xd10, 24, 3),
+	MUX_CFG(MUX_CLK_MMC2, mmc2_parents, 0xd20, 24, 3),
+	MUX_CFG(MUX_APB1, apb1_parents, 0x518, 24, 2),
+	MUX_CFG(MUX_CLK_SPI0, spi_parents, 0x0f00, 24, 3),
+	MUX_CFG(MUX_CLK_SPI1, spi_parents, 0x0f08, 24, 3),
+	MUX_CFG(MUX_CLK_SPI2, spi_parents, 0x0f10, 24, 3),
+	MUX_CFG(MUX_CLK_SPI3, spi_parents, 0x0f20, 24, 3),
+	MUX_CFG(MUX_CLK_CE, ce_parents, 0xAC0, 24, 3),
+	MUX_CFG(MUX_CLK_RV_CORE, rv_core_parents, 0x0b80, 24, 3),
+	MUX_CFG(MUX_CLK_DE, de_parents, 0x0A00, 24, 3),
+	MUX_CFG(MUX_CLK_TCONLCD0, tcon_lcd0_parents, 0x1500, 24, 3),
+	MUX_CFG(MUX_CLK_MIPIDSI0, mipi_dsi0_parents, 0x1580, 24, 3),
+	MUX_CFG(MUX_CLK_COMBOPHY0, combophy0_parents, 0x15c0, 24, 3),
+	MUX_CFG(MUX_CLK_SPIF, spif_parents, 0x0f18, 24, 3),
+};
+
+enum enum_gate_cfg {
+	GATE_CLK_PLL_PERIPH0,
+	GATE_CLK_PLL_PERIPH1,
+	GATE_CLK_PLL_VIDEO0,
+	GATE_CLK_BUS_MMC0,
+	GATE_CLK_BUS_MMC1,
+	GATE_CLK_BUS_MMC2,
+	GATE_CLK_MMC0,
+	GATE_CLK_MMC1,
+	GATE_CLK_MMC2,
+	GATE_CLK_UART0,
+	GATE_CLK_UART1,
+	GATE_CLK_UART2,
+	GATE_CLK_UART3,
+	GATE_CLK_UART4,
+	GATE_CLK_UART5,
+	GATE_CLK_UART6,
+	GATE_CLK_UART7,
+	GATE_CLK_UART8,
+	GATE_CLK_UART9,
+	GATE_CLK_BUS_SPI0,
+	GATE_CLK_BUS_SPI1,
+	GATE_CLK_BUS_SPI2,
+	GATE_CLK_BUS_SPI3,
+	GATE_CLK_SPI0,
+	GATE_CLK_SPI1,
+	GATE_CLK_SPI2,
+	GATE_CLK_SPI3,
+	GATE_CLK_BUS_DMA0_AHB,
+	GATE_CLK_MBUS_BUS_DMA0,
+	GATE_CLK_BUS_CE,
+	GATE_CLK_CE,
+	GATE_CLK_MBUS_CE,
+	GATE_CLK_CE_SYS,
+	GATE_CLK_RV_CORE,
+	GATE_CLK_RV_TS,
+	GATE_CLK_RV_CFG,
+	GATE_CLK_AXI_MON,
+	GATE_CLK_BUS_OTG,
+	GATE_CLK_USB20_0_HOST_EHCI,
+	GATE_CLK_BUS_USB_AHB,
+	GATE_CLK_USB20_1_HOST_EHCI,
+	GATE_CLK_DE,
+	GATE_CLK_BUS_DE0_AHB,
+	GATE_CLK_BUS_VO0_REG_AHB,
+	GATE_CLK_TCON_LCD0,
+	GATE_CLK_BUS_TCON_LCD0_AHB,
+	GATE_CLK_MIPI_DSI0,
+	GATE_CLK_BUS_MIPI_DSI0_AHB,
+	GATE_CLK_COMBOPHY0,
+	GATE_CLK_MBUS_GMAC0,
+	GATE_CLK_GMAC0_PHY,
+	GATE_CLK_GMAC0,
+	GATE_CLK_MBUS_GMAC1,
+	GATE_CLK_GMAC1_PHY,
+	GATE_CLK_GMAC1,
+	GATE_CLK_MBUS_GMAC2,
+	GATE_CLK_GMAC2_PHY,
+	GATE_CLK_GMAC2,
+	GATE_CLK_TWI0,
+	GATE_CLK_TWI1,
+	GATE_CLK_TWI2,
+	GATE_CLK_TWI3,
+	GATE_CLK_TWI4,
+	GATE_CLK_TWI5,
+	GATE_CLK_PWMCS0,
+	GATE_CLK_PWMCS1,
+	GATE_CLK_PWM2,
+	GATE_CLK_BUS_SPIF,
+	GATE_CLK_SPIF,
+};
+
+
+static const struct sunxi_gate_cfg sun8iw22_gates[] = {
+	GATE_CFG(GATE_CLK_PLL_PERIPH0, 0xA0, BIT(31)),
+	GATE_CFG(GATE_CLK_PLL_PERIPH1, 0xC0, BIT(31)),
+	GATE_CFG(GATE_CLK_PLL_VIDEO0, 0x120, BIT(31)),
+	GATE_CFG(GATE_CLK_MMC0, 0x0d00, BIT(31)),
+	GATE_CFG(GATE_CLK_MMC1, 0x0d10, BIT(31)),
+	GATE_CFG(GATE_CLK_MMC2, 0x0d20, BIT(31)),
+	GATE_CFG(GATE_CLK_BUS_MMC0, 0x0d0c, BIT(0)),
+	GATE_CFG(GATE_CLK_BUS_MMC1, 0x0d1c, BIT(0)),
+	GATE_CFG(GATE_CLK_BUS_MMC2, 0x0d2c, BIT(0)),
+	GATE_CFG(GATE_CLK_UART0, 0x0e00, BIT(0)),
+	GATE_CFG(GATE_CLK_UART1, 0x0e04, BIT(0)),
+	GATE_CFG(GATE_CLK_UART2, 0x0e08, BIT(0)),
+	GATE_CFG(GATE_CLK_UART3, 0x0e0c, BIT(0)),
+	GATE_CFG(GATE_CLK_UART4, 0x0e10, BIT(0)),
+	GATE_CFG(GATE_CLK_UART5, 0x0e14, BIT(0)),
+	GATE_CFG(GATE_CLK_UART6, 0x0e18, BIT(0)),
+	GATE_CFG(GATE_CLK_UART7, 0x0e20, BIT(0)),
+	GATE_CFG(GATE_CLK_UART8, 0x0e24, BIT(0)),
+	GATE_CFG(GATE_CLK_UART9, 0x0e28, BIT(0)),
+	GATE_CFG(GATE_CLK_BUS_SPI0, 0x0f04, BIT(0)),
+	GATE_CFG(GATE_CLK_BUS_SPI1, 0x0f0c, BIT(0)),
+	GATE_CFG(GATE_CLK_BUS_SPI2, 0x0f14, BIT(0)),
+	GATE_CFG(GATE_CLK_BUS_SPI3, 0x0f24, BIT(0)),
+	GATE_CFG(GATE_CLK_BUS_SPIF, 0x0f1c, BIT(0)),
+	GATE_CFG(GATE_CLK_SPI0, 0x0f00, BIT(31)),
+	GATE_CFG(GATE_CLK_SPI1, 0x0f08, BIT(31)),
+	GATE_CFG(GATE_CLK_SPI2, 0x0f10, BIT(31)),
+	GATE_CFG(GATE_CLK_SPI3, 0x0f20, BIT(31)),
+	GATE_CFG(GATE_CLK_SPIF, 0x0f18, BIT(31)),
+	GATE_CFG(GATE_CLK_BUS_DMA0_AHB, 0x0704, BIT(0)),
+	GATE_CFG(GATE_CLK_MBUS_BUS_DMA0, 0x05e0, BIT(0)),
+	GATE_CFG(GATE_CLK_BUS_CE, 0xAC4, BIT(0)),
+	GATE_CFG(GATE_CLK_CE, 0xAC0, BIT(31)),
+	GATE_CFG(GATE_CLK_MBUS_CE, 0x5E0, BIT(2)),
+	GATE_CFG(GATE_CLK_CE_SYS, 0xAC4, BIT(1)),
+	GATE_CFG(GATE_CLK_RV_CORE, 0x0b80, BIT(31)),
+	GATE_CFG(GATE_CLK_RV_TS, 0x0b88, BIT(31)),
+	GATE_CFG(GATE_CLK_RV_CFG, 0x0b9c, BIT(0)),
+	GATE_CFG(GATE_CLK_AXI_MON, 0x1c00, BIT(0)),
+	GATE_CFG(GATE_CLK_BUS_OTG, 0x1304, BIT(8)),
+	GATE_CFG(GATE_CLK_USB20_0_HOST_EHCI, 0x1304, BIT(4)),
+	GATE_CFG(GATE_CLK_BUS_USB_AHB, 0x1344, BIT(0)),
+	GATE_CFG(GATE_CLK_USB20_1_HOST_EHCI, 0x130c, BIT(4)),
+	GATE_CFG(GATE_CLK_DE, 0x0a00, BIT(31)),
+	GATE_CFG(GATE_CLK_BUS_DE0_AHB, 0x0a04, BIT(0)),
+	GATE_CFG(GATE_CLK_BUS_VO0_REG_AHB, 0x16c4, BIT(0)),
+	GATE_CFG(GATE_CLK_TCON_LCD0, 0x1500, BIT(31)),
+	GATE_CFG(GATE_CLK_BUS_TCON_LCD0_AHB, 0x1504, BIT(0)),
+	GATE_CFG(GATE_CLK_MIPI_DSI0, 0x1580, BIT(31)),
+	GATE_CFG(GATE_CLK_BUS_MIPI_DSI0_AHB, 0x1584, BIT(0)),
+	GATE_CFG(GATE_CLK_COMBOPHY0, 0x15c0, BIT(31)),
+	GATE_CFG(GATE_CLK_MBUS_GMAC0, 0x05E0, BIT(11)),
+	GATE_CFG(GATE_CLK_GMAC0_PHY, 0x1400, BIT(31)),
+	GATE_CFG(GATE_CLK_GMAC0, 0x140c, BIT(0)),
+	GATE_CFG(GATE_CLK_MBUS_GMAC1, 0x05E0, BIT(12)),
+	GATE_CFG(GATE_CLK_GMAC1_PHY, 0x1410, BIT(31)),
+	GATE_CFG(GATE_CLK_GMAC1, 0x141c, BIT(0)),
+	GATE_CFG(GATE_CLK_MBUS_GMAC2, 0x05E0, BIT(13)),
+	GATE_CFG(GATE_CLK_GMAC2_PHY, 0x1420, BIT(31)),
+	GATE_CFG(GATE_CLK_GMAC2, 0x142c, BIT(0)),
+	GATE_CFG(GATE_CLK_TWI0, 0xE80, BIT(0)),
+	GATE_CFG(GATE_CLK_TWI1, 0xE84, BIT(0)),
+	GATE_CFG(GATE_CLK_TWI2, 0xE88, BIT(0)),
+	GATE_CFG(GATE_CLK_TWI3, 0xE8C, BIT(0)),
+	GATE_CFG(GATE_CLK_TWI4, 0xE90, BIT(0)),
+	GATE_CFG(GATE_CLK_TWI5, 0xE94, BIT(0)),
+	GATE_CFG(GATE_CLK_PWMCS0, 0x7C4, BIT(0)),
+	GATE_CFG(GATE_CLK_PWMCS1, 0x7CC, BIT(0)),
+	GATE_CFG(GATE_CLK_PWM2, 0x794, BIT(0)),
+};
+
+enum enum_div_cfg {
+	DIV_CLK_PLL_PERIPH0_2X,
+	DIV_CLK_PLL_PERIPH0_800M,
+	DIV_CLK_PLL_PERIPH0_480M,
+	DIV_CLK_PLL_PERIPH1_2X,
+	DIV_CLK_PLL_PERIPH1_800M,
+	DIV_CLK_PLL_PERIPH1_480M,
+	DIV_CLK_PLL_VIDEO0_4X,
+	DIV_CLK_MMC0,
+	DIV_CLK_MMC1,
+	DIV_CLK_MMC2,
+	DIV_CLK_APB1,
+	DIV_CLK_SPI0,
+	DIV_CLK_SPI1,
+	DIV_CLK_SPI2,
+	DIV_CLK_SPI3,
+	DIV_CLK_CE,
+	DIV_CLK_RV_CORE,
+	DIV_CLK_RV_AXI,
+	DIV_CLK_DE,
+	DIV_CLK_TCON_LCD0,
+	DIV_CLK_MIPI_DSI0,
+	DIV_CLK_COMBOPHY0,
+	DIV_CLK_GMAC0_PHY,
+	DIV_CLK_GMAC1_PHY,
+	DIV_CLK_GMAC2_PHY,
+	DIV_CLK_SPIF,
+};
+
+static const struct sunxi_div_cfg sun8iw22_dividers[] = {
+	DIV_CFG(DIV_CLK_PLL_PERIPH0_2X,   0xa0, 1, 1, 16, 3, 8, 8, 0, NULL),
+	DIV_CFG(DIV_CLK_PLL_PERIPH0_800M, 0xa0, 1, 1, 20, 3, 8, 8, 0, NULL),
+	DIV_CFG(DIV_CLK_PLL_PERIPH0_480M, 0xa0, 1, 1, 2, 3, 8, 8, 0, NULL),
+	DIV_CFG(DIV_CLK_PLL_PERIPH1_2X,   0xc0, 1, 1, 16, 3, 8, 8, 0, NULL),
+	DIV_CFG(DIV_CLK_PLL_PERIPH1_800M, 0xc0, 1, 1, 20, 3, 8, 8, 0, NULL),
+	DIV_CFG(DIV_CLK_PLL_PERIPH1_480M, 0xc0, 1, 1, 2, 3, 8, 8, 0, NULL),
+	DIV_CFG(DIV_CLK_PLL_VIDEO0_4X, 0x120, 1, 1, 20, 3, 8, 8, 0, NULL),
+	DIV_CFG(DIV_CLK_MMC0, 0xD00, 0, 5, 8, 5, 0, 0, 0, NULL),
+	DIV_CFG(DIV_CLK_MMC1, 0xD10, 0, 5, 8, 5, 0, 0, 0, NULL),
+	DIV_CFG(DIV_CLK_MMC2, 0xD20, 0, 5, 8, 5, 0, 0, 0, NULL),
+	DIV_CFG(DIV_CLK_APB1, 0x518, 0, 5, 0, 0, 0, 0, 0, NULL),
+	DIV_CFG(DIV_CLK_SPI0, 0x0f00, 0, 5, 8, 5, 0, 0, 0, NULL),
+	DIV_CFG(DIV_CLK_SPI1, 0x0f08, 0, 5, 8, 5, 0, 0, 0, NULL),
+	DIV_CFG(DIV_CLK_SPI2, 0x0f10, 0, 5, 8, 5, 0, 0, 0, NULL),
+	DIV_CFG(DIV_CLK_SPI3, 0x0f20, 0, 5, 8, 5, 0, 0, 0, NULL),
+	DIV_CFG(DIV_CLK_CE, 0xAC0, 0, 5, 0, 0, 0, 0, 0, NULL),
+	DIV_CFG(DIV_CLK_SPI3, 0x0f20, 0, 5, 8, 5, 0, 0, 0, NULL),
+	DIV_CFG(DIV_CLK_RV_CORE, 0x0b80, 0, 5, 0, 0, 0, 0, 0, NULL),
+	DIV_CFG(DIV_CLK_RV_AXI, 0x0b80, 8, 2, 0, 0, 0, 0, 0, NULL),
+	DIV_CFG(DIV_CLK_DE, 0xA00, 0, 5, 0, 0, 0, 0, 0, NULL),
+	DIV_CFG(DIV_CLK_TCON_LCD0, 0x1500, 0, 5, 0, 0, 0, 0, 0, NULL),
+	DIV_CFG(DIV_CLK_MIPI_DSI0, 0x1580, 0, 5, 0, 0, 0, 0, 0, NULL),
+	DIV_CFG(DIV_CLK_CE, 0x15c0, 0, 5, 0, 0, 0, 0, 0, NULL),
+	DIV_CFG(DIV_CLK_GMAC0_PHY, 0x1400, 0, 5, 0, 0, 0, 0, 0, NULL),
+	DIV_CFG(DIV_CLK_GMAC1_PHY, 0x1410, 0, 5, 0, 0, 0, 0, 0, NULL),
+	DIV_CFG(DIV_CLK_GMAC2_PHY, 0x1420, 0, 5, 0, 0, 0, 0, 0, NULL),
+	DIV_CFG(DIV_CLK_SPIF, 0x0f18, 0, 5, 8, 5, 0, 0, 0, NULL),
+};
+
+
+static const struct clock_config sun8iw22_clock_cfg[] = {
+	SUNXI_CLK_COMPOSITE_FACTOR(CLK_PLL_PERIPH0, "pll-peri0-2x", "osc24M", 0,
+			GATE_CLK_PLL_PERIPH0, DIV_CLK_PLL_PERIPH0_2X),
+
+	SUNXI_CLK_COMPOSITE_FACTOR(CLK_PLL_PERIPH0_800M, "pll-peri0-800m", "osc24M", 0,
+			GATE_CLK_PLL_PERIPH0, DIV_CLK_PLL_PERIPH0_800M),
+
+	SUNXI_CLK_COMPOSITE_FACTOR(CLK_PLL_PERIPH0_480M, "pll-peri0-480m", "osc24M", 0,
+			GATE_CLK_PLL_PERIPH0, DIV_CLK_PLL_PERIPH0_480M),
+
+	SUNXI_CLK_FIXED(CLK_PLL_PERIPH0_600M, "pll-peri0-600m", "pll-peri0-2x", 2, 1, 0),
+	SUNXI_CLK_FIXED(CLK_PLL_PERIPH0_400M, "pll-peri0-400m", "pll-peri0-2x", 3, 1, 0),
+	SUNXI_CLK_FIXED(CLK_PLL_PERIPH0_300M, "pll-peri0-300m", "pll-peri0-600m", 2, 1, 0),
+	SUNXI_CLK_FIXED(CLK_PLL_PERIPH0_200M, "pll-peri0-200m", "pll-peri0-400m", 2, 1, 0),
+	SUNXI_CLK_FIXED(CLK_PLL_PERIPH0_160M, "pll-peri0-160m", "pll-peri0-480m", 3, 1, 0),
+	SUNXI_CLK_FIXED(CLK_PLL_PERIPH0_150M, "pll-peri0-150m", "pll-peri0-300m", 2, 1, 0),
+
+	SUNXI_CLK_COMPOSITE_FACTOR(CLK_PLL_PERIPH1, "pll-peri1-2x", "osc24M", 0,
+			GATE_CLK_PLL_PERIPH1, DIV_CLK_PLL_PERIPH1_2X),
+
+	SUNXI_CLK_COMPOSITE_FACTOR(CLK_PLL_PERIPH1_800M, "pll-peri1-800m", "osc24M", 0,
+			GATE_CLK_PLL_PERIPH1, DIV_CLK_PLL_PERIPH1_800M),
+
+	SUNXI_CLK_COMPOSITE_FACTOR(CLK_PLL_PERIPH1_480M, "pll-peri1-480m", "osc24M", 0,
+			GATE_CLK_PLL_PERIPH1, DIV_CLK_PLL_PERIPH1_480M),
+
+	SUNXI_CLK_FIXED(CLK_PLL_PERIPH1_600M, "pll-peri1-600m", "pll-peri1-2x", 2, 1, 0),
+	SUNXI_CLK_FIXED(CLK_PLL_PERIPH1_400M, "pll-peri1-400m", "pll-peri1-2x", 3, 1, 0),
+	SUNXI_CLK_FIXED(CLK_PLL_PERIPH1_300M, "pll-peri1-300m", "pll-peri1-600m", 2, 1, 0),
+	SUNXI_CLK_FIXED(CLK_PLL_PERIPH1_200M, "pll-peri1-200m", "pll-peri1-400m", 2, 1, 0),
+	SUNXI_CLK_FIXED(CLK_PLL_PERIPH1_160M, "pll-peri1-160m", "pll-peri1-480m", 3, 1, 0),
+	SUNXI_CLK_FIXED(CLK_PLL_PERIPH1_150M, "pll-peri1-150m", "pll-peri1-300m", 2, 1, 0),
+
+	SUNXI_CLK_COMPOSITE_FACTOR(CLK_PLL_VIDEO0_4X, "pll-video0-4x", "osc24M", 0,
+			GATE_CLK_PLL_VIDEO0, DIV_CLK_PLL_VIDEO0_4X),
+
+	SUNXI_CLK_COMPOSITE(CLK_MMC0, "mmc0", 0,
+			GATE_CLK_MMC0, MUX_CLK_MMC0, DIV_CLK_MMC0),
+	SUNXI_CLK_COMPOSITE(CLK_MMC1, "mmc1", 0,
+			GATE_CLK_MMC1, MUX_CLK_MMC1, DIV_CLK_MMC1),
+	SUNXI_CLK_COMPOSITE(CLK_MMC2, "mmc2", 0,
+			GATE_CLK_MMC2, MUX_CLK_MMC2, DIV_CLK_MMC2),
+	SUNXI_CLK_GATE(CLK_BUS_MMC0, "mmc0-bus", "osc24M", 0, GATE_CLK_BUS_MMC0),
+	SUNXI_CLK_GATE(CLK_BUS_MMC1, "mmc1-bus", "osc24M", 0, GATE_CLK_BUS_MMC1),
+	SUNXI_CLK_GATE(CLK_BUS_MMC2, "mmc2-bus", "osc24M", 0, GATE_CLK_BUS_MMC2),
+	SUNXI_CLK_GATE(CLK_BUS_UART0, "uart0-bus", "osc24M", 0, GATE_CLK_UART0),
+	SUNXI_CLK_GATE(CLK_BUS_UART1, "uart1-bus", "osc24M", 0, GATE_CLK_UART1),
+	SUNXI_CLK_GATE(CLK_BUS_UART2, "uart2-bus", "osc24M", 0, GATE_CLK_UART2),
+	SUNXI_CLK_GATE(CLK_BUS_UART3, "uart3-bus", "osc24M", 0, GATE_CLK_UART3),
+	SUNXI_CLK_GATE(CLK_BUS_UART4, "uart4-bus", "osc24M", 0, GATE_CLK_UART4),
+	SUNXI_CLK_GATE(CLK_BUS_UART5, "uart5-bus", "osc24M", 0, GATE_CLK_UART5),
+	SUNXI_CLK_GATE(CLK_BUS_UART6, "uart6-bus", "osc24M", 0, GATE_CLK_UART6),
+	SUNXI_CLK_GATE(CLK_BUS_UART7, "uart7-bus", "osc24M", 0, GATE_CLK_UART7),
+	SUNXI_CLK_GATE(CLK_BUS_UART8, "uart8-bus", "osc24M", 0, GATE_CLK_UART8),
+	SUNXI_CLK_GATE(CLK_BUS_UART9, "uart9-bus", "osc24M", 0, GATE_CLK_UART9),
+
+	SUNXI_CLK_COMPOSITE(CLK_APB1, "apb1", CLK_SET_RATE_PARENT,
+			NO_SUNXI_GATE, MUX_APB1, DIV_CLK_APB1),
+	SUNXI_CLK_GATE(CLK_BUS_SPI0, "spi0-bus", "osc24M", 0, GATE_CLK_BUS_SPI0),
+	SUNXI_CLK_GATE(CLK_BUS_SPI1, "spi1-bus", "osc24M", 0, GATE_CLK_BUS_SPI1),
+	SUNXI_CLK_GATE(CLK_BUS_SPI2, "spi2-bus", "osc24M", 0, GATE_CLK_BUS_SPI2),
+	SUNXI_CLK_GATE(CLK_BUS_SPI3, "spi3-bus", "osc24M", 0, GATE_CLK_BUS_SPI3),
+	SUNXI_CLK_GATE(CLK_BUS_SPIF, "spif-bus", "osc24M", 0, GATE_CLK_BUS_SPIF),
+	SUNXI_CLK_GATE(CLK_BUS_DMA0_AHB, "bus-dma0-ahb", "osc24M", 0, GATE_CLK_BUS_DMA0_AHB),
+	SUNXI_CLK_GATE(CLK_MBUS_BUS_DMA0, "mbus-bus-dma0", "osc24M", 0, GATE_CLK_MBUS_BUS_DMA0),
+	SUNXI_CLK_COMPOSITE(CLK_SPI0, "spi0", 0, GATE_CLK_SPI0, MUX_CLK_SPI0, DIV_CLK_SPI0),
+	SUNXI_CLK_COMPOSITE(CLK_SPI1, "spi1", 0, GATE_CLK_SPI1, MUX_CLK_SPI1, DIV_CLK_SPI1),
+	SUNXI_CLK_COMPOSITE(CLK_SPI2, "spi2", 0, GATE_CLK_SPI2, MUX_CLK_SPI2, DIV_CLK_SPI2),
+	SUNXI_CLK_COMPOSITE(CLK_SPI3, "spi3", 0, GATE_CLK_SPI3, MUX_CLK_SPI3, DIV_CLK_SPI3),
+	SUNXI_CLK_COMPOSITE(CLK_SPIF, "spif", 0, GATE_CLK_SPIF, MUX_CLK_SPIF, DIV_CLK_SPIF),
+	SUNXI_CLK_COMPOSITE(CLK_CE, "ce_clk", 0, GATE_CLK_CE, MUX_CLK_CE, DIV_CLK_CE),
+	SUNXI_CLK_GATE(CLK_MBUS_CE_GATE, "mbus_ce", "osc24M", 0, GATE_CLK_MBUS_CE),
+	SUNXI_CLK_GATE(CLK_BUS_CE, "bus_ce", "osc24M", 0, GATE_CLK_BUS_CE),
+	SUNXI_CLK_GATE(CLK_CE_SYS, "ce_sys_clk", "osc24M", 0, GATE_CLK_CE_SYS),
+	SUNXI_CLK_GATE(CLK_RV_TS, "rv_ts", "osc24M", 0, GATE_CLK_RV_TS),
+	SUNXI_CLK_GATE(CLK_BUS_RV_CFG, "rv_cfg", "osc24M", 0, GATE_CLK_RV_CFG),
+	SUNXI_CLK_COMPOSITE(CLK_RV_CORE, "rv_core", 0,  GATE_CLK_RV_CORE, MUX_CLK_RV_CORE, DIV_CLK_RV_CORE),
+	SUNXI_CLK_COMPOSITE(CLK_E907_AXI_CLK, "rv_axi", 0, 0, 0, DIV_CLK_RV_AXI),
+	SUNXI_CLK_GATE(CLK_BUS_RV_AXIMON, "axi_mon", "osc24M", 0, GATE_CLK_AXI_MON),
+	SUNXI_CLK_GATE(CLK_BUS_OTG, "otg", "osc24M", 0, GATE_CLK_BUS_OTG),
+	SUNXI_CLK_GATE(CLK_USB20_0_HOST_EHCI, "otg", "osc24M", 0, GATE_CLK_USB20_0_HOST_EHCI),
+	SUNXI_CLK_GATE(CLK_BUS_USB_AHB, "otg", "osc24M", 0, GATE_CLK_BUS_USB_AHB),
+	SUNXI_CLK_GATE(CLK_USB20_1_HOST_EHCI, "ehci1", "osc24M", 0, GATE_CLK_USB20_1_HOST_EHCI),
+	SUNXI_CLK_COMPOSITE(CLK_DE, "de", 0, GATE_CLK_DE, MUX_CLK_DE, DIV_CLK_DE),
+	SUNXI_CLK_COMPOSITE(CLK_TCON_LCD0, "tcon-lcd0", 0, GATE_CLK_TCON_LCD0, MUX_CLK_TCONLCD0, DIV_CLK_TCON_LCD0),
+	SUNXI_CLK_COMPOSITE(CLK_MIPI_DSI0, "mipi-dsi0", 0, GATE_CLK_MIPI_DSI0, MUX_CLK_MIPIDSI0, DIV_CLK_MIPI_DSI0),
+	SUNXI_CLK_COMPOSITE(CLK_COMBOPHY0, "combophy0", 0, GATE_CLK_COMBOPHY0, MUX_CLK_COMBOPHY0, DIV_CLK_COMBOPHY0),
+	SUNXI_CLK_GATE(CLK_BUS_DE0_AHB, "bus_de0", "osc24M", 0, GATE_CLK_BUS_DE0_AHB),
+	SUNXI_CLK_GATE(CLK_BUS_VO0_REG_AHB, "bus_vo0", "osc24M", 0, GATE_CLK_BUS_VO0_REG_AHB),
+	SUNXI_CLK_GATE(CLK_BUS_TCON_LCD0_AHB, "bus_tconlcd0", "osc24M", 0, GATE_CLK_BUS_TCON_LCD0_AHB),
+	SUNXI_CLK_GATE(CLK_BUS_MIPI_DSI0_AHB, "bud_mipidsi0", "osc24M", 0, GATE_CLK_BUS_MIPI_DSI0_AHB),
+
+	SUNXI_CLK_GATE(CLK_MBUS_BUS_GMAC0, "gmac0-mbus", "osc24M", 0, GATE_CLK_MBUS_GMAC0),
+	SUNXI_CLK_GATE(CLK_BUS_GMAC0_AHB, "gmac0", "osc24M", 0, GATE_CLK_GMAC0),
+	SUNXI_CLK_COMPOSITE_FACTOR(CLK_GMAC0_PHY, "gmac0-phy", "pll-peri0-150m", 0, GATE_CLK_GMAC0_PHY, DIV_CLK_GMAC0_PHY),
+	SUNXI_CLK_GATE(CLK_MBUS_BUS_GMAC1, "gmac1-mbus", "osc24M", 0, GATE_CLK_MBUS_GMAC1),
+	SUNXI_CLK_GATE(CLK_BUS_GMAC1_AHB, "gmac1", "osc24M", 0, GATE_CLK_GMAC1),
+	SUNXI_CLK_COMPOSITE_FACTOR(CLK_GMAC1_PHY, "gmac1-phy", "pll-peri0-150m", 0, GATE_CLK_GMAC1_PHY, DIV_CLK_GMAC1_PHY),
+	SUNXI_CLK_GATE(CLK_MBUS_BUS_GMAC2, "gmac2-mbus", "osc24M", 0, GATE_CLK_MBUS_GMAC2),
+	SUNXI_CLK_GATE(CLK_BUS_GMAC2_AHB, "gmac2", "osc24M", 0, GATE_CLK_GMAC2),
+	SUNXI_CLK_COMPOSITE_FACTOR(CLK_GMAC2_PHY, "gmac2-phy", "pll-peri0-150m", 0, GATE_CLK_GMAC2_PHY, DIV_CLK_GMAC2_PHY),
+
+	SUNXI_CLK_GATE(CLK_TWI0, "twi0", "osc24M", 0, GATE_CLK_TWI0),
+	SUNXI_CLK_GATE(CLK_TWI1, "twi1", "osc24M", 0, GATE_CLK_TWI1),
+	SUNXI_CLK_GATE(CLK_TWI2, "twi2", "osc24M", 0, GATE_CLK_TWI2),
+	SUNXI_CLK_GATE(CLK_TWI3, "twi3", "osc24M", 0, GATE_CLK_TWI3),
+	SUNXI_CLK_GATE(CLK_TWI4, "twi4", "osc24M", 0, GATE_CLK_TWI4),
+	SUNXI_CLK_GATE(CLK_TWI5, "twi5", "osc24M", 0, GATE_CLK_TWI5),
+	SUNXI_CLK_GATE(CLK_PWMCS0, "pwmcs0", "osc24M", 0, GATE_CLK_PWMCS0),
+	SUNXI_CLK_GATE(CLK_PWMCS1, "pwmcs1", "osc24M", 0, GATE_CLK_PWMCS1),
+	SUNXI_CLK_GATE(CLK_PWM2, "pwm2", "osc24M", 0, GATE_CLK_PWM2),
+};
+
+
+const struct ccu_desc sunxi_ccu_desc = {
+	.resets = sunxi_resets,
+	.num_resets = ARRAY_SIZE(sunxi_resets),
+};
+
+
+static const struct sunxi_clock_match_data sun8iw22_data = {
+	.tab_clocks	= sun8iw22_clock_cfg,
+	.num_clocks	= ARRAY_SIZE(sun8iw22_clock_cfg),
+	.clock_data = &(const struct clk_sunxi_clock_data) {
+		.num_gates	= ARRAY_SIZE(sun8iw22_gates),
+		.gates		= sun8iw22_gates,
+		.muxes		= sun8iw22_muxes,
+		.dividers	= sun8iw22_dividers,
+	},
+};
+
+static int sun8iw22_clk_probe(struct udevice *dev)
+{
+	int err;
+
+	err = sunxi_clk_init(dev, &sun8iw22_data);
+	if (err)
+		return err;
+
+	return 0;
+}
+
+static const struct udevice_id sun8iw22_clk_ids[] = {
+	{ .compatible = "allwinner,sunxi-ccu",
+	  .data = (ulong)&sunxi_ccu_desc },
+	{ }
+};
+
+U_BOOT_DRIVER(sun8iw22_clk) = {
+	.name		= "sun8iw22_clk",
+	.id		= UCLASS_CLK,
+	.of_match	= sun8iw22_clk_ids,
+	.bind		= sunxi_clk_bind,
+	.probe		= sun8iw22_clk_probe,
+	.of_to_plat	= sunxi_clk_of_to_plat,
+	.ops 		= &sunxi_ccu_ops,
+	.priv_auto 	= sizeof(struct sunximp_rcc_priv),
+};
+

@@ -1,0 +1,43 @@
+config AW_MMC
+	bool "Allwinner sunxi SD/MMC Host Controller support"
+	depends on ARCH_SUNXI && MMC
+	default y
+	help
+	  This selects support for the SD/MMC Host Controller on
+	  Allwinner sunxi SoCs.
+
+if AW_MMC
+config SUNXI_SDMMC_LOGICAL_OFFSET
+	int "logic address for read/write"
+	default 40960
+	help
+	  logic address for mbr and partitions(1M-MBRSIZE = 2048-32).
+	  SDMMC address is offset*512 bytes.
+
+config SUNXI_SDMMC_BOOT0_START_ADDR
+	int "boot0 offset"
+	default 16
+	help
+	  offset to write boot0, unit:sector(512 bytes)
+
+config SUNXI_SDMMC_BOOT0_BACKUP_START_ADDR
+	int "backup boot0 offset"
+	default 256
+	help
+	  offset to write backup boot0, unit:sector(512 bytes)
+
+config SUNXI_SDMMC_UBOOT_START_ADDR
+	int "uboot offset"
+	default 32800
+	help
+	  offset to write backup uboot, unit:sector(512 bytes)
+
+config SUNXI_SDMMC_UBOOT_BACKUP_START_ADDR
+	int "backup uboot offset"
+	default 24576
+	help
+	  offset to write backup uboot, unit:sector(512 bytes)
+
+
+endif
+

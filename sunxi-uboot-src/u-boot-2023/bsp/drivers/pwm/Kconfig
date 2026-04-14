@@ -1,0 +1,13 @@
+config AW_PWM
+	bool "Enable support for the Allwinner Sunxi PWM"
+	depends on DM_PWM
+	help
+	  This PWM is found on H3, A64 and other Allwinner SoCs. It supports a
+	  programmable period and duty cycle. A 16-bit counter is used.
+
+config AW_PWMCS
+	bool "Enable support for the Allwinner Sunxi PWMCS"
+	depends on DM_PWM
+	help
+	  This PWMCS is found on Allwinner SoCs. It supports a programmable
+	  period and duty cycle. A 16-bit counter is used.

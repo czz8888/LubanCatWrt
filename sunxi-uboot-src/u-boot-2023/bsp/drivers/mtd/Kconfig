@@ -1,0 +1,62 @@
+menu "AW-NAND Support"
+
+config AW_NAND
+	bool "SUNXI awnand driver"
+	default n
+	help
+	  Support SUNXI awnand driver.
+
+if AW_NAND
+source "bsp/drivers/mtd/awnand/Kconfig"
+endif
+
+endmenu
+
+menu "AW-SPINOR Support"
+
+config AW_SPINOR
+	bool "Support sunxi spinor devices"
+	depends on (AW_SPI || AW_SPIF)
+	select USE_SYS_MAX_FLASH_BANKS
+	help
+	  Enable support for sunxi spinor devices. These provide a block-level interface
+	  which permits reading, writing and (in some cases) erasing blocks.
+
+if AW_SPINOR
+config SPINOR_UBOOT_OFFSET
+	int "uboot offset for boot from spinor"
+	default 128
+	help
+	 spinor address is offset*512 bytes.
+
+config SPINOR_LOGICAL_OFFSET
+	int "logic address for read/write"
+	default 2016
+	help
+	  logic address for mbr and partitions(1M-MBRSIZE = 2048-32).
+	  spinor address is offset*512 bytes.
+
+config SPINOR_UBOOT_SECURE_OFFSET
+	int "secure uboot offset for boot from spinor"
+	default 128
+	help
+	 spinor address is offset*512 bytes.
+
+config SPINOR_LOGICAL_SECURE_OFFSET
+	int "secure logic address for read/write"
+	default 2016
+	help
+	  logic address for mbr and partitions(1M-MBRSIZE = 2048-32).
+	  spinor address is offset*512 bytes.
+
+source "bsp/drivers/mtd/spi/Kconfig"
+endif
+
+endmenu
+
+config SPI_SAMP_DL_EN
+	bool "SPI try sample param"
+	default n
+	help
+		support SPI try sample param
+
